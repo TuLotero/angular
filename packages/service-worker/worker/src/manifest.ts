@@ -20,9 +20,7 @@ export interface Manifest {
   hashTable: {[url: string]: string};
 }
 
-export interface PushConfig {
-  url: string;
-}
+export interface PushConfig { url: string; }
 
 export interface AssetGroupConfig {
   name: string;

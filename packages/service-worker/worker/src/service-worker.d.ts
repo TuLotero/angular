@@ -92,8 +92,8 @@ interface PushMessageData {
 }
 
 interface PushSubscriptionChangeEvent extends ExtendableEvent {
-  readonly  newSubscription?: PushSubscription;
-  readonly  oldSubscription?: PushSubscription;
+  readonly newSubscription?: PushSubscription;
+  readonly oldSubscription?: PushSubscription;
 }
 
 // Sync API
@@ -121,7 +121,8 @@ interface ServiceWorkerGlobalScope {
   addEventListener(event: 'fetch', fn: (event?: FetchEvent) => any): void;
   addEventListener(event: 'install', fn: (event?: ExtendableEvent) => any): void;
   addEventListener(event: 'push', fn: (event?: PushEvent) => any): void;
-  addEventListener(event: 'pushsubscriptionchange', fn: (event?: PushSubscriptionChangeEvent) => any): void;
+  addEventListener(
+      event: 'pushsubscriptionchange', fn: (event?: PushSubscriptionChangeEvent) => any): void;
   addEventListener(event: 'notificationclick', fn: (event?: NotificationEvent) => any): void;
   addEventListener(event: 'sync', fn: (event?: SyncEvent) => any): void;
 

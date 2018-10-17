@@ -34,9 +34,7 @@ export interface Config {
  *
  * @experimental
  */
-export interface PushConfig {
-  url: string;
-}
+export interface PushConfig { url: string; }
 
 
 

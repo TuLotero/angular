@@ -7,21 +7,13 @@
  */
 
 import {Adapter} from './adapter';
-import {
-  CacheState,
-  Debuggable,
-  DebugIdleState,
-  DebugState,
-  DebugVersion,
-  UpdateCacheStatus,
-  UpdateSource
-} from './api';
+import {CacheState, DebugIdleState, DebugState, DebugVersion, Debuggable, UpdateCacheStatus, UpdateSource} from './api';
 import {AppVersion} from './app-version';
 import {Database} from './database';
 import {DebugHandler} from './debug';
 import {IdleScheduler} from './idle';
-import {hashManifest, Manifest, ManifestHash} from './manifest';
-import {isMsgActivateUpdate, isMsgCheckForUpdates, MsgAny} from './msg';
+import {Manifest, ManifestHash, hashManifest} from './manifest';
+import {MsgAny, isMsgActivateUpdate, isMsgCheckForUpdates} from './msg';
 import {isNavigationRequest} from './util';
 
 type ClientId = string;
@@ -38,17 +30,8 @@ const IDLE_THRESHOLD = 5000;
 const SUPPORTED_CONFIG_VERSION = 1;
 
 const NOTIFICATION_OPTION_NAMES = [
-  'actions',
-  'badge',
-  'body',
-  'dir',
-  'icon',
-  'lang',
-  'renotify',
-  'requireInteraction',
-  'tag',
-  'vibrate',
-  'data'
+  'actions', 'badge', 'body', 'dir', 'icon', 'lang', 'renotify', 'requireInteraction', 'tag',
+  'vibrate', 'data'
 ];
 
 interface LatestEntry {
@@ -81,7 +64,7 @@ export class Driver implements Debuggable, UpdateSource {
    * Tracks whether the SW is in an initialized state or not. Before
    * initialization, it's not legal to respond to requests.
    */
-  initialized: Promise<void> | null = null;
+  initialized: Promise<void>|null = null;
 
   /**
    * Maps client IDs to the manifest hash of the application version being used
@@ -103,9 +86,9 @@ export class Driver implements Debuggable, UpdateSource {
    *
    * Valid after initialization has completed.
    */
-  private latestHash: ManifestHash | null = null;
+  private latestHash: ManifestHash|null = null;
 
-  private lastUpdateCheck: number | null = null;
+  private lastUpdateCheck: number|null = null;
 
   /**
    * Whether there is a check for updates currently scheduled due to navigation.
@@ -127,9 +110,7 @@ export class Driver implements Debuggable, UpdateSource {
   debugger: DebugHandler;
 
   constructor(
-    private scope: ServiceWorkerGlobalScope,
-    private adapter: Adapter,
-    private db: Database) {
+      private scope: ServiceWorkerGlobalScope, private adapter: Adapter, private db: Database) {
     // Set up all the event handlers that the SW needs.
 
     // The install event is triggered when the service worker is first
@@ -168,10 +149,9 @@ export class Driver implements Debuggable, UpdateSource {
     this.scope.addEventListener('fetch', (event) => this.onFetch(event !));
     this.scope.addEventListener('message', (event) => this.onMessage(event !));
     this.scope.addEventListener('push', (event) => this.onPush(event !));
-    this.scope.addEventListener('pushsubscriptionchange',
-      (event) => this.onPushSubscriptionChange(event !));
-    this.scope.addEventListener('notificationclick',
-      (event) => this.onNotificationClick(event !));
+    this.scope.addEventListener(
+        'pushsubscriptionchange', (event) => this.onPushSubscriptionChange(event !));
+    this.scope.addEventListener('notificationclick', (event) => this.onNotificationClick(event !));
 
     // The debugger generates debug pages in response to debugging requests.
     this.debugger = new DebugHandler(this, this.adapter);
@@ -191,8 +171,7 @@ export class Driver implements Debuggable, UpdateSource {
     const req = event.request;
 
     // The only thing that is served unconditionally is the debug page.
-    if (this.adapter.parseUrl(req.url, this.scope.registration.scope).path ===
-        '/ngsw/state') {
+    if (this.adapter.parseUrl(req.url, this.scope.registration.scope).path === '/ngsw/state') {
       // Allow the debugger to handle the request, but don't affect SW state in
       // any other way.
       event.respondWith(this.debugger.handleFetch(req));
@@ -219,15 +198,14 @@ export class Driver implements Debuggable, UpdateSource {
     // such requests. (See also
     // https://github.com/angular/angular/issues/22362.) TODO(gkalpak): Remove
     // once no longer necessary (i.e. fixed in Chrome DevTools).
-    if ((req.cache as string) === 'only-if-cached' && req.mode !==
-        'same-origin') {
+    if ((req.cache as string) === 'only-if-cached' && req.mode !== 'same-origin') {
       // Log the incident only the first time it happens, to avoid spamming the
       // logs.
       if (!this.loggedInvalidOnlyIfCachedRequest) {
         this.loggedInvalidOnlyIfCachedRequest = true;
         this.debugger.log(
-          `Ignoring invalid request: 'only-if-cached' can be set only with 'same-origin' mode`,
-          `Driver.fetch(${req.url}, cache: ${req.cache}, mode: ${req.mode})`);
+            `Ignoring invalid request: 'only-if-cached' can be set only with 'same-origin' mode`,
+            `Driver.fetch(${req.url}, cache: ${req.cache}, mode: ${req.mode})`);
       }
       return;
     }
@@ -262,7 +240,7 @@ export class Driver implements Debuggable, UpdateSource {
 
       // Wait until initialization is properly scheduled, then trigger idle
       // events to allow it to complete (assuming the SW is idle).
-      event.waitUntil((async () => {
+      event.waitUntil((async() => {
         await this.initialized;
         await this.idle.trigger();
       })());
@@ -310,15 +288,14 @@ export class Driver implements Debuggable, UpdateSource {
       const manifest = current.manifest;
       if (manifest.push) {
         const req = this.adapter.newRequest(manifest.push.url, {
-          body: JSON.stringify({
-            oldSubscription: event.oldSubscription,
-            newSubscription: event.newSubscription
-          })
+          body: JSON.stringify(
+              {oldSubscription: event.oldSubscription, newSubscription: event.newSubscription})
         });
         const response = await this.scope.fetch(req);
         if (!response.ok) {
-          this.debugger.log('Tried to upload new push subscription but server' +
-                            ' responses with ' + response.status.toString());
+          this.debugger.log(
+              'Tried to upload new push subscription but server' +
+              ' responses with ' + response.status.toString());
         }
       }
     } else {
@@ -326,12 +303,9 @@ export class Driver implements Debuggable, UpdateSource {
     }
   }
 
-  private async handleMessage(msg: MsgAny & { action: string },
-                              from: Client): Promise<void> {
+  private async handleMessage(msg: MsgAny&{action: string}, from: Client): Promise<void> {
     if (isMsgCheckForUpdates(msg)) {
-      const action = (async () => {
-        await this.checkForUpdate();
-      })();
+      const action = (async() => { await this.checkForUpdate(); })();
       await this.reportStatus(from, action, msg.statusNonce);
     } else if (isMsgActivateUpdate(msg)) {
       await this.reportStatus(from, this.updateClient(from), msg.statusNonce);
@@ -346,16 +320,14 @@ export class Driver implements Debuggable, UpdateSource {
     if (!data.notification || !data.notification.title) {
       return;
     }
-    const desc = data.notification as{ [key: string]: string | undefined };
-    let options: { [key: string]: string | undefined } = {};
+    const desc = data.notification as{[key: string]: string | undefined};
+    let options: {[key: string]: string | undefined} = {};
     NOTIFICATION_OPTION_NAMES.filter(name => desc.hasOwnProperty(name))
-      .forEach(name => options[name] = desc[name]);
+        .forEach(name => options[name] = desc[name]);
     await this.scope.registration.showNotification(desc['title'] !, options);
   }
 
-  private async reportStatus(client: Client,
-                             promise: Promise<void>,
-                             nonce: number): Promise<void> {
+  private async reportStatus(client: Client, promise: Promise<void>, nonce: number): Promise<void> {
     const response = {type: 'STATUS', nonce, status: true};
     try {
       await promise;
@@ -379,7 +351,7 @@ export class Driver implements Debuggable, UpdateSource {
     }
 
     // Switch the client over.
-    let previous: Object | undefined = undefined;
+    let previous: Object|undefined = undefined;
 
     // Look up the application data associated with the existing version. If
     // there isn't any, fall back on using the hash.
@@ -422,8 +394,7 @@ export class Driver implements Debuggable, UpdateSource {
     } catch (e) {
       // Initialization failed. Enter a safe state.
       this.state = DriverReadyState.SAFE_MODE;
-      this.stateMessage =
-        `Initialization failed due to error: ${errorToString(e)}`;
+      this.stateMessage = `Initialization failed due to error: ${errorToString(e)}`;
 
       // Even though the driver entered safe mode, background tasks still need
       // to happen.
@@ -437,7 +408,7 @@ export class Driver implements Debuggable, UpdateSource {
     // On navigation requests, check for new updates.
     if (event.request.mode === 'navigate' && !this.scheduledNavUpdateCheck) {
       this.scheduledNavUpdateCheck = true;
-      this.idle.schedule('check-updates-on-navigation', async () => {
+      this.idle.schedule('check-updates-on-navigation', async() => {
         this.scheduledNavUpdateCheck = false;
         await this.checkForUpdate();
       });
@@ -454,7 +425,7 @@ export class Driver implements Debuggable, UpdateSource {
       return this.safeFetch(event.request);
     }
 
-    let res: Response | null = null;
+    let res: Response|null = null;
     try {
       // Handle the request. First try the AppVersion. If that doesn't work,
       // fall back on the network.
@@ -462,9 +433,7 @@ export class Driver implements Debuggable, UpdateSource {
     } catch (err) {
       if (err.isCritical) {
         // Something went wrong with the activation of this version.
-        await this.versionFailed(appVersion,
-          err,
-          this.latestHash === appVersion.manifestHash);
+        await this.versionFailed(appVersion, err, this.latestHash === appVersion.manifestHash);
 
         event.waitUntil(this.idle.trigger());
         return this.safeFetch(event.request);
@@ -510,8 +479,7 @@ export class Driver implements Debuggable, UpdateSource {
 
     // Attempt to load the needed state from the DB. If this fails, the catch
     // {} block will populate these variables with freshly constructed values.
-    let manifests: ManifestMap, assignments: ClientAssignments,
-      latest: LatestEntry;
+    let manifests: ManifestMap, assignments: ClientAssignments, latest: LatestEntry;
     try {
       // Read them from the DB simultaneously.
       [manifests, assignments, latest] = await Promise.all([
@@ -522,7 +490,7 @@ export class Driver implements Debuggable, UpdateSource {
 
       // Successfully loaded from saved state. This implies a manifest exists,
       // so the update check needs to happen in the background.
-      this.idle.schedule('init post-load (update, cleanup)', async () => {
+      this.idle.schedule('init post-load (update, cleanup)', async() => {
         await this.checkForUpdate();
         try {
           await this.cleanupCaches();
@@ -562,13 +530,7 @@ export class Driver implements Debuggable, UpdateSource {
       // been created for it.
       if (!this.versions.has(hash)) {
         this.versions.set(
-          hash,
-          new AppVersion(this.scope,
-            this.adapter,
-            this.db,
-            this.idle,
-            manifest,
-            hash));
+            hash, new AppVersion(this.scope, this.adapter, this.db, this.idle, manifest, hash));
       }
     });
 
@@ -583,8 +545,8 @@ export class Driver implements Debuggable, UpdateSource {
       } else {
         this.clientVersionMap.set(clientId, latest.latest);
         this.debugger.log(
-          `Unknown version ${hash} mapped for client ${clientId}, using latest instead`,
-          `initialize: map assignments`);
+            `Unknown version ${hash} mapped for client ${clientId}, using latest instead`,
+            `initialize: map assignments`);
       }
     });
 
@@ -594,7 +556,7 @@ export class Driver implements Debuggable, UpdateSource {
     // Finally, assert that the latest version is in fact loaded.
     if (!this.versions.has(latest.latest)) {
       throw new Error(
-        `Invariant violated (initialize): latest hash ${latest.latest} has no known manifest`);
+          `Invariant violated (initialize): latest hash ${latest.latest} has no known manifest`);
     }
 
 
@@ -605,13 +567,12 @@ export class Driver implements Debuggable, UpdateSource {
     // wait for the full initialization. If any of these initializations fail,
     // versionFailed() will be called either synchronously or asynchronously to
     // handle the failure and re-map clients.
-    await Promise.all(Object.keys(manifests).map(async (hash: ManifestHash) => {
+    await Promise.all(Object.keys(manifests).map(async(hash: ManifestHash) => {
       try {
         // Attempt to schedule or initialize this version. If this operation is
         // successful, then initialization either succeeded or was scheduled. If
         // it fails, then full initialization was attempted and failed.
-        await this.scheduleInitialization(this.versions.get(hash) !,
-          this.latestHash === hash);
+        await this.scheduleInitialization(this.versions.get(hash) !, this.latestHash === hash);
       } catch (err) {
         this.debugger.log(err, `initialize: schedule init of ${hash}`);
         return false;
@@ -619,13 +580,12 @@ export class Driver implements Debuggable, UpdateSource {
     }));
   }
 
-  private lookupVersionByHash(hash: ManifestHash,
-                              debugName: string = 'lookupVersionByHash'):
-    AppVersion {
+  private lookupVersionByHash(hash: ManifestHash, debugName: string = 'lookupVersionByHash'):
+      AppVersion {
     // The version should exist, but check just in case.
     if (!this.versions.has(hash)) {
       throw new Error(
-        `Invariant violated (${debugName}): want AppVersion for ${hash} but not loaded`);
+          `Invariant violated (${debugName}): want AppVersion for ${hash} but not loaded`);
     }
     return this.versions.get(hash) !;
   }
@@ -633,7 +593,7 @@ export class Driver implements Debuggable, UpdateSource {
   /**
    * Decide which version of the manifest to use for the event.
    */
-  private async assignVersion(event: FetchEvent): Promise<AppVersion | null> {
+  private async assignVersion(event: FetchEvent): Promise<AppVersion|null> {
     // First, check whether the event has a (non empty) client ID. If it does,
     // the version may already be associated.
     const clientId = event.clientId;
@@ -646,11 +606,8 @@ export class Driver implements Debuggable, UpdateSource {
         // Ordinarily, this client would be served from its assigned version.
         // But, if this request is a navigation request, this client can be
         // updated to the latest version immediately.
-        if (this.state === DriverReadyState.NORMAL && hash !==
-            this.latestHash &&
-            isNavigationRequest(event.request,
-              this.scope.registration.scope,
-              this.adapter)) {
+        if (this.state === DriverReadyState.NORMAL && hash !== this.latestHash &&
+            isNavigationRequest(event.request, this.scope.registration.scope, this.adapter)) {
           // Update this client to the latest version immediately.
           if (this.latestHash === null) {
             throw new Error(`Invariant violated (assignVersion): latestHash was null`);
@@ -730,11 +687,10 @@ export class Driver implements Debuggable, UpdateSource {
    * server or client are offline (detected as response status 504).
    */
   private async fetchLatestManifest(ignoreOfflineError?: false): Promise<Manifest>;
-  private async fetchLatestManifest(ignoreOfflineError: true): Promise<Manifest | null>;
-  private async fetchLatestManifest(ignoreOfflineError = false): Promise<Manifest | null> {
+  private async fetchLatestManifest(ignoreOfflineError: true): Promise<Manifest|null>;
+  private async fetchLatestManifest(ignoreOfflineError = false): Promise<Manifest|null> {
     const res =
-      await this.safeFetch(this.adapter.newRequest('ngsw.json?ngsw-cache-bust=' +
-                                                   Math.random()));
+        await this.safeFetch(this.adapter.newRequest('ngsw.json?ngsw-cache-bust=' + Math.random()));
     if (!res.ok) {
       if (res.status === 404) {
         await this.deleteAllCaches();
@@ -749,14 +705,14 @@ export class Driver implements Debuggable, UpdateSource {
   }
 
   private async deleteAllCaches(): Promise<void> {
-    await (await this.scope.caches.keys())
-      .filter(key => key.startsWith('ngsw:'))
-      .reduce(async (previous, key) => {
-        await Promise.all([
-          previous,
-          this.scope.caches.delete(key),
-        ]);
-      }, Promise.resolve());
+    await(await this.scope.caches.keys())
+        .filter(key => key.startsWith('ngsw:'))
+        .reduce(async(previous, key) => {
+          await Promise.all([
+            previous,
+            this.scope.caches.delete(key),
+          ]);
+        }, Promise.resolve());
   }
 
   /**
@@ -765,14 +721,12 @@ export class Driver implements Debuggable, UpdateSource {
    * Promise which must be awaited, as under some conditions the AppVersion
    * might be initialized immediately.
    */
-  private async scheduleInitialization(appVersion: AppVersion,
-                                       latest: boolean): Promise<void> {
-    const initialize = async () => {
+  private async scheduleInitialization(appVersion: AppVersion, latest: boolean): Promise<void> {
+    const initialize = async() => {
       try {
         await appVersion.initializeFully();
       } catch (err) {
-        this.debugger.log(err,
-          `initializeFully for ${appVersion.manifestHash}`);
+        this.debugger.log(err, `initializeFully for ${appVersion.manifestHash}`);
         await this.versionFailed(appVersion, err, latest);
       }
     };
@@ -780,17 +734,13 @@ export class Driver implements Debuggable, UpdateSource {
     if (this.scope.registration.scope.indexOf('://localhost') > -1) {
       return initialize();
     }
-    this.idle.schedule(`initialization(${appVersion.manifestHash})`,
-      initialize);
+    this.idle.schedule(`initialization(${appVersion.manifestHash})`, initialize);
   }
 
-  private async versionFailed(appVersion: AppVersion,
-                              err: Error,
-                              latest: boolean): Promise<void> {
+  private async versionFailed(appVersion: AppVersion, err: Error, latest: boolean): Promise<void> {
     // This particular AppVersion is broken. First, find the manifest hash.
     const broken =
-      Array.from(this.versions.entries())
-        .find(([hash, version]) => version === appVersion);
+        Array.from(this.versions.entries()).find(([hash, version]) => version === appVersion);
     if (broken === undefined) {
       // This version is no longer in use anyway, so nobody cares.
       return;
@@ -807,38 +757,30 @@ export class Driver implements Debuggable, UpdateSource {
       // mercy of the network, but caches continue to be valid for previous
       // versions. This is unfortunate but unavoidable.
       this.state = DriverReadyState.EXISTING_CLIENTS_ONLY;
-      this.stateMessage =
-        `Degraded due to failed initialization: ${errorToString(err)}`;
+      this.stateMessage = `Degraded due to failed initialization: ${errorToString(err)}`;
 
       // Cancel the binding for these clients.
       Array.from(this.clientVersionMap.keys())
-        .forEach(clientId => this.clientVersionMap.delete(clientId));
+          .forEach(clientId => this.clientVersionMap.delete(clientId));
     } else {
       // The current version is viable, but this older version isn't. The only
       // possible remedy is to stop serving the older version and go to the
       // network. Figure out which clients are affected and put them on the
       // latest.
       const affectedClients =
-        Array.from(this.clientVersionMap.keys())
-          .filter(
-            clientId => this.clientVersionMap.get(clientId) ! === brokenHash);
+          Array.from(this.clientVersionMap.keys())
+              .filter(clientId => this.clientVersionMap.get(clientId) ! === brokenHash);
       // Push the affected clients onto the latest version.
-      affectedClients.forEach(
-        clientId => this.clientVersionMap.set(clientId, this.latestHash !));
+      affectedClients.forEach(clientId => this.clientVersionMap.set(clientId, this.latestHash !));
     }
     await this.sync();
   }
 
   private async setupUpdate(manifest: Manifest, hash: string): Promise<void> {
-    const newVersion = new AppVersion(this.scope,
-      this.adapter,
-      this.db,
-      this.idle,
-      manifest,
-      hash);
+    const newVersion = new AppVersion(this.scope, this.adapter, this.db, this.idle, manifest, hash);
 
     // Try to determine a version that's safe to update from.
-    let updateFrom: AppVersion | undefined = undefined;
+    let updateFrom: AppVersion|undefined = undefined;
 
     // It's always safe to update from a version, even a broken one, as it will
     // still only have valid resources cached. If there is no latest version,
@@ -852,7 +794,7 @@ export class Driver implements Debuggable, UpdateSource {
       await this.deleteAllCaches();
       await this.scope.registration.unregister();
       throw new Error(
-        `Invalid config version: expected ${SUPPORTED_CONFIG_VERSION}, got ${manifest.configVersion}.`);
+          `Invalid config version: expected ${SUPPORTED_CONFIG_VERSION}, got ${manifest.configVersion}.`);
     }
 
     // Cause the new version to become fully initialized. If this fails, then
@@ -876,8 +818,7 @@ export class Driver implements Debuggable, UpdateSource {
       if (manifest === null) {
         // Client or server offline. Unable to check for updates at this time.
         // Continue to service clients (existing and new).
-        this.debugger.log(
-          'Check for update aborted. (Client or server offline.)');
+        this.debugger.log('Check for update aborted. (Client or server offline.)');
         return false;
       }
 
@@ -892,12 +833,10 @@ export class Driver implements Debuggable, UpdateSource {
 
       return true;
     } catch (err) {
-      this.debugger.log(err,
-        `Error occurred while updating to manifest ${hash}`);
+      this.debugger.log(err, `Error occurred while updating to manifest ${hash}`);
 
       this.state = DriverReadyState.EXISTING_CLIENTS_ONLY;
-      this.stateMessage =
-        `Degraded due to failed initialization: ${errorToString(err)}`;
+      this.stateMessage = `Degraded due to failed initialization: ${errorToString(err)}`;
 
       return false;
     }
@@ -912,15 +851,11 @@ export class Driver implements Debuggable, UpdateSource {
 
     // Construct a serializable map of hashes to manifests.
     const manifests: ManifestMap = {};
-    this.versions.forEach((version, hash) => {
-      manifests[hash] = version.manifest;
-    });
+    this.versions.forEach((version, hash) => { manifests[hash] = version.manifest; });
 
     // Construct a serializable map of client ids to version hashes.
     const assignments: ClientAssignments = {};
-    this.clientVersionMap.forEach((hash, clientId) => {
-      assignments[clientId] = hash;
-    });
+    this.clientVersionMap.forEach((hash, clientId) => { assignments[clientId] = hash; });
 
     // Record the latest entry. Since this is a sync which is necessarily
     // happening after initialization, latestHash should always be valid.
@@ -941,7 +876,7 @@ export class Driver implements Debuggable, UpdateSource {
     // may skip some clients in the browser back-forward cache, but not much
     // can be done about that.
     const activeClients: ClientId[] =
-      (await this.scope.clients.matchAll()).map(client => client.id);
+        (await this.scope.clients.matchAll()).map(client => client.id);
 
     // A simple list of client ids that the SW has kept track of. Subtracting
     // activeClients from this list will result in the set of client ids which
@@ -951,7 +886,7 @@ export class Driver implements Debuggable, UpdateSource {
 
     // Remove clients in the clientVersionMap that are no longer active.
     knownClients.filter(id => activeClients.indexOf(id) === -1)
-      .forEach(id => this.clientVersionMap.delete(id));
+        .forEach(id => this.clientVersionMap.delete(id));
 
     // Next, determine the set of versions which are still used. All others can
     // be removed.
@@ -961,12 +896,11 @@ export class Driver implements Debuggable, UpdateSource {
     // Collect all obsolete versions by filtering out used versions from the
     // set of all versions.
     const obsoleteVersions =
-      Array.from(this.versions.keys())
-        .filter(
-          version => !usedVersions.has(version) && version !== this.latestHash);
+        Array.from(this.versions.keys())
+            .filter(version => !usedVersions.has(version) && version !== this.latestHash);
 
     // Remove all the versions which are no longer used.
-    await obsoleteVersions.reduce(async (previous, version) => {
+    await obsoleteVersions.reduce(async(previous, version) => {
       // Wait for the other cleanup operations to complete.
       await previous;
 
@@ -997,30 +931,30 @@ export class Driver implements Debuggable, UpdateSource {
    * Determine if a specific version of the given resource is cached anywhere
    * within the SW, and fetch it if so.
    */
-  lookupResourceWithHash(url: string, hash: string): Promise<Response | null> {
+  lookupResourceWithHash(url: string, hash: string): Promise<Response|null> {
     return Array
-    // Scan through the set of all cached versions, valid or otherwise. It's
-    // safe to do such lookups even for invalid versions as the cached version
-    // of a resource will have the same hash regardless.
-      .from(this.versions.values())
-      // Reduce the set of versions to a single potential result. At any point
-      // along the reduction, if a response has already been identified, then
-      // pass it through, as no future operation could change the response. If
-      // no response has been found yet, keep checking versions until one is or
-      // until all versions have been exhausted.
-      .reduce(async (prev, version) => {
-        // First, check the previous result. If a non-null result has been
-        // found already, just return it.
-        if (await prev !== null) {
-          return prev;
-        }
+        // Scan through the set of all cached versions, valid or otherwise. It's
+        // safe to do such lookups even for invalid versions as the cached version
+        // of a resource will have the same hash regardless.
+        .from(this.versions.values())
+        // Reduce the set of versions to a single potential result. At any point
+        // along the reduction, if a response has already been identified, then
+        // pass it through, as no future operation could change the response. If
+        // no response has been found yet, keep checking versions until one is or
+        // until all versions have been exhausted.
+        .reduce(async(prev, version) => {
+          // First, check the previous result. If a non-null result has been
+          // found already, just return it.
+          if (await prev !== null) {
+            return prev;
+          }
 
-        // No result has been found yet. Try the next `AppVersion`.
-        return version.lookupResourceWithHash(url, hash);
-      }, Promise.resolve<Response | null>(null));
+          // No result has been found yet. Try the next `AppVersion`.
+          return version.lookupResourceWithHash(url, hash);
+        }, Promise.resolve<Response|null>(null));
   }
 
-  async lookupResourceWithoutHash(url: string): Promise<CacheState | null> {
+  async lookupResourceWithoutHash(url: string): Promise<CacheState|null> {
     await this.initialized;
     const version = this.versions.get(this.latestHash !) !;
     return version.lookupResourceWithoutHash(url);
@@ -1037,8 +971,7 @@ export class Driver implements Debuggable, UpdateSource {
     return version.recentCacheStatus(url);
   }
 
-  private mergeHashWithAppData(manifest: Manifest,
-                               hash: string): { hash: string, appData: Object } {
+  private mergeHashWithAppData(manifest: Manifest, hash: string): {hash: string, appData: Object} {
     return {
       hash,
       appData: manifest.appData as Object,
@@ -1051,7 +984,7 @@ export class Driver implements Debuggable, UpdateSource {
     const clients = await this.scope.clients.matchAll();
     const next = this.versions.get(this.latestHash !) !;
 
-    await clients.reduce(async (previous, client) => {
+    await clients.reduce(async(previous, client) => {
       await previous;
 
       // Firstly, determine which version this client is on.
@@ -1082,9 +1015,7 @@ export class Driver implements Debuggable, UpdateSource {
 
   async broadcast(msg: Object): Promise<void> {
     const clients = await this.scope.clients.matchAll();
-    clients.forEach(client => {
-      client.postMessage(msg);
-    });
+    clients.forEach(client => { client.postMessage(msg); });
   }
 
   async debugState(): Promise<DebugState> {
@@ -1101,8 +1032,8 @@ export class Driver implements Debuggable, UpdateSource {
     return Array.from(this.versions.keys()).map(hash => {
       const version = this.versions.get(hash) !;
       const clients = Array.from(this.clientVersionMap.entries())
-        .filter(([clientId, version]) => version === hash)
-        .map(([clientId, version]) => clientId);
+                          .filter(([clientId, version]) => version === hash)
+                          .map(([clientId, version]) => clientId);
       return {
         hash,
         manifest: version.manifest, clients,
