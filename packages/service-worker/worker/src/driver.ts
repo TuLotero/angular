@@ -23,7 +23,6 @@ import {IdleScheduler} from './idle';
 import {hashManifest, Manifest, ManifestHash} from './manifest';
 import {isMsgActivateUpdate, isMsgCheckForUpdates, MsgAny} from './msg';
 import {isNavigationRequest} from './util';
-import {IndexedDb} from './indexed-db';
 
 type ClientId = string;
 
@@ -310,18 +309,11 @@ export class Driver implements Debuggable, UpdateSource {
     if (current) {
       const manifest = current.manifest;
       if (manifest.push) {
-        let headers = manifest.push.headers;
-        if (manifest.push.authReader && manifest.push.authReader.type === 'cacheStorage') {
-          const config = manifest.push.authReader.config;
-          const db = new IndexedDb(this.scope.indexedDb);
-          await db.open(config.db);
-          const auth = await db.read(config.table, config.key);
-          headers.push(['Authorization', auth]);
-        }
-
         const req = this.adapter.newRequest(manifest.push.url, {
-          headers: headers,
-          body: JSON.stringify(event.newSubscription)
+          body: JSON.stringify({
+            oldSubscription: event.oldSubscription,
+            newSubscription: event.newSubscription
+          })
         });
         const response = await this.scope.fetch(req);
         if (!response.ok) {

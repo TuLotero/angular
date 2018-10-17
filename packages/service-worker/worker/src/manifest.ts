@@ -22,22 +22,6 @@ export interface Manifest {
 
 export interface PushConfig {
   url: string;
-  headers: string[][];
-  authReader: PushAuthReader;
-}
-
-export interface PushAuthReader {
-  type: string;
-  config: any;
-}
-
-export interface IndexedDbPushAuthReader extends PushAuthReader {
-  type: 'indexedDb';
-  config: {
-    db: string;
-    table: string;
-    id: string;
-  }
 }
 
 export interface AssetGroupConfig {

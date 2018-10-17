@@ -36,34 +36,8 @@ export interface Config {
  */
 export interface PushConfig {
   url: string;
-  headers: string[][];
-  authReader: PushAuthReader;
 }
 
-/**
- *  Configuration for reading server authentication.
- *
- *  @experimental
- */
-export interface PushAuthReader {
-  type: string;
-  config: object;
-}
-
-
-/**
- *  Configuration for reading server authentication from local storage.
- *
- *  @experimental
- */
-export interface IndexedDbPushAuthReader extends PushAuthReader {
-  type: 'indexedDb';
-  config: {
-    db: string;
-    table: string;
-    id: string;
-  }
-}
 
 
 /**
