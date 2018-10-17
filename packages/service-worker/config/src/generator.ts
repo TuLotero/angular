@@ -25,6 +25,7 @@ export class Generator {
       configVersion: 1,
       index: joinUrls(this.baseHref, config.index),
       appData: config.appData,
+      push: config.push,
       assetGroups: await this.processAssetGroups(config, hashTable),
       dataGroups: this.processDataGroups(config), hashTable,
     };
