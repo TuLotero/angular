@@ -288,6 +288,7 @@ export class Driver implements Debuggable, UpdateSource {
       const manifest = current.manifest;
       if (manifest.push) {
         const req = this.adapter.newRequest(manifest.push.url, {
+          method: 'POST',
           body: JSON.stringify(
               {oldSubscription: event.oldSubscription, newSubscription: event.newSubscription})
         });
