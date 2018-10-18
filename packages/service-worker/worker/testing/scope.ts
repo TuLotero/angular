@@ -71,6 +71,10 @@ export class MockClients implements Clients {
   }
 
   async claim(): Promise<any> {}
+
+  openWindow(url: string): Promise<WindowClient> {
+    return <Promise<WindowClient>>{};
+  }
 }
 
 export class SwTestHarness implements ServiceWorkerGlobalScope, Adapter, Context {
@@ -80,6 +84,7 @@ export class SwTestHarness implements ServiceWorkerGlobalScope, Adapter, Context
 
   private selfMessageQueue: any[] = [];
   unregistered: boolean;
+  location:Location;
   readonly notifications: {title: string, options: Object}[] = [];
   readonly registration: ServiceWorkerRegistration = {
     active: {

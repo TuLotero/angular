@@ -14,7 +14,7 @@ export interface Manifest {
   configVersion: number;
   appData?: {[key: string]: string};
   index: string;
-  push: PushConfig;
+  push?: PushConfig;
   assetGroups?: AssetGroupConfig[];
   dataGroups?: DataGroupConfig[];
   hashTable: {[url: string]: string};

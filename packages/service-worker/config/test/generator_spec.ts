@@ -21,6 +21,9 @@ import {MockFilesystem} from '../testing/mock';
       const gen = new Generator(fs, '/test');
       const res = gen.process({
         index: '/index.html',
+        push: {
+          url: 'foo'
+        },
         appData: {
           test: true,
         },
@@ -58,6 +61,9 @@ import {MockFilesystem} from '../testing/mock';
            expect(config).toEqual({
              'configVersion': 1,
              'index': '/test/index.html',
+             'push': {
+               'url': 'foo'
+             },
              'appData': {
                'test': true,
              },

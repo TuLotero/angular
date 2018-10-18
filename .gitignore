@@ -1,5 +1,5 @@
 .DS_STORE
-
+/tmp/
 /dist/
 bazel-*
 e2e_test.*

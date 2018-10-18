@@ -123,7 +123,9 @@ function publishPackages {
     COMMITTER_USER_EMAIL=`git --no-pager show -s --format='%cE' HEAD`
     LATEST_TAG=`getLatestTag`
 
-    publishRepo "${COMPONENT}" "${JS_BUILD_ARTIFACTS_DIR}"
+    if [[ "$COMPONENT" == "service-worker" ]]; then
+    	publishRepo "${COMPONENT}" "${JS_BUILD_ARTIFACTS_DIR}"
+    fi
   done
 
   echo "Finished publishing build artifacts"
