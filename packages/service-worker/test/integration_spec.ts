@@ -18,7 +18,12 @@ import {CacheDatabase} from '../worker/src/db-cache';
 import {Driver} from '../worker/src/driver';
 import {Manifest} from '../worker/src/manifest';
 import {MockRequest} from '../worker/testing/fetch';
-import {MockFileSystemBuilder, MockServerStateBuilder, tmpHashTableForFs} from '../worker/testing/mock';
+import {
+  MockAsyncLocalStorage,
+  MockFileSystemBuilder,
+  MockServerStateBuilder,
+  tmpHashTableForFs
+} from '../worker/testing/mock';
 import {SwTestHarness, SwTestHarnessBuilder} from '../worker/testing/scope';
 
 import {async_beforeEach, async_fit, async_it} from './async';
@@ -76,13 +81,15 @@ const serverUpdate =
     let reg: MockServiceWorkerRegistration;
     let scope: SwTestHarness;
     let driver: Driver;
+    let storageMock: MockAsyncLocalStorage;
 
     async_beforeEach(async() => {
       // Fire up the client.
       mock = new MockServiceWorkerContainer();
       comm = new NgswCommChannel(mock as any, 'browser');
       scope = new SwTestHarnessBuilder().withServerState(server).build();
-      driver = new Driver(scope, scope, new CacheDatabase(scope, scope));
+      storageMock = new MockAsyncLocalStorage();
+      driver = new Driver(scope, scope, new CacheDatabase(scope, scope), storageMock);
 
       scope.clients.add('default');
       scope.clients.getMock('default') !.queue.subscribe(msg => { mock.sendMessage(msg); });

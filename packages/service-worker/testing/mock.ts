@@ -11,7 +11,7 @@ import {Subject} from 'rxjs/Subject';
 export class MockServiceWorkerContainer {
   private onControllerChange: Function[] = [];
   private onMessage: Function[] = [];
-  private registration: MockServiceWorkerRegistration|null = null;
+  private registration: MockServiceWorkerRegistration|null;
   controller: MockServiceWorker|null = null;
 
   messages = new Subject();
@@ -59,4 +59,23 @@ export class MockServiceWorker {
   postMessage(value: Object) { this.mock.messages.next(value); }
 }
 
-export class MockServiceWorkerRegistration {}
+export class MockServiceWorkerRegistration {
+
+  public pushManager:PushManager = new MockPushManager();
+}
+
+export class MockPushManager {
+
+  getSubscription(): Promise<PushSubscription> {
+    return Promise.resolve({endpoint: 'foo'} as PushSubscription);
+  }
+
+  permissionState(options?: PushSubscriptionOptionsInit | undefined): Promise<PushPermissionState> {
+    return Promise.resolve(<PushPermissionState>'granted');
+  }
+
+  subscribe(options?: PushSubscriptionOptionsInit | undefined): Promise<PushSubscription> {
+    return Promise.resolve({endpoint: 'foo'} as PushSubscription);
+  }
+
+}

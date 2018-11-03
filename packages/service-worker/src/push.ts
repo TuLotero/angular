@@ -17,6 +17,7 @@ import {take as op_take} from 'rxjs/operator/take';
 import {toPromise as op_toPromise} from 'rxjs/operator/toPromise';
 
 import {ERR_SW_NOT_SUPPORTED, NgswCommChannel} from './low_level';
+import {MsgStatusPush} from '@angular/service-worker/worker/src/msg';
 
 
 /**
@@ -49,6 +50,18 @@ export class SwPush {
     const workerDrivenSubscriptions = <Observable<PushSubscription|null>>(op_switchMap.call(
         this.pushManager, (pm: PushManager) => pm.getSubscription().then(sub => { return sub; })));
     this.subscription = obs_merge(workerDrivenSubscriptions, this.subscriptionChanges);
+
+    this.subscription.subscribe(subscription => {
+      const pushData: MsgStatusPush = {
+        action: 'STATUS_PUSH',
+        statusNonce: this.sw.generateNonce(),
+        subscription: null
+      };
+      if (typeof(PushSubscription) === 'function' && subscription instanceof PushSubscription) {
+        pushData.subscription = subscription;
+      }
+      this.sw.postMessageWithStatus('STATUS_PUSH', pushData, pushData.statusNonce);
+    });
   }
 
   /**
@@ -81,12 +94,13 @@ export class SwPush {
     if (!this.sw.isEnabled) {
       return Promise.reject(new Error(ERR_SW_NOT_SUPPORTED));
     }
-    const unsubscribe = op_switchMap.call(this.subscription, (sub: PushSubscription | null) => {
+
+    const subscribeOnce = op_take.call(this.subscription, 1);
+    const unsubscribe = op_switchMap.call(subscribeOnce, (sub: PushSubscription | null) => {
       if (sub !== null) {
         return sub.unsubscribe().then(success => {
           if (success) {
             this.subscriptionChanges.next(null);
-            return undefined;
           } else {
             throw new Error('Unsubscribe failed!');
           }
@@ -95,7 +109,6 @@ export class SwPush {
         throw new Error('Not subscribed to push notifications.');
       }
     });
-    const unsubscribeOnce = op_take.call(unsubscribe, 1);
-    return op_toPromise.call(unsubscribeOnce) as Promise<void>;
+    return op_toPromise.call(unsubscribe) as Promise<void>;
   }
 }

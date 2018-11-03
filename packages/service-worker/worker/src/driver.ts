@@ -13,8 +13,14 @@ import {Database} from './database';
 import {DebugHandler} from './debug';
 import {IdleScheduler} from './idle';
 import {Manifest, ManifestHash, hashManifest} from './manifest';
-import {MsgAny, isMsgActivateUpdate, isMsgCheckForUpdates} from './msg';
+import {
+  MsgAny,
+  isMsgActivateUpdate,
+  isMsgCheckForUpdates,
+  isMsgStatusPush
+} from './msg';
 import {isNavigationRequest} from './util';
+import {AsyncLocalStorage} from './local-storage';
 
 type ClientId = string;
 
@@ -109,8 +115,10 @@ export class Driver implements Debuggable, UpdateSource {
 
   debugger: DebugHandler;
 
-  constructor(
-      private scope: ServiceWorkerGlobalScope, private adapter: Adapter, private db: Database) {
+  constructor(private scope: ServiceWorkerGlobalScope,
+              private adapter: Adapter,
+              private db: Database,
+              private localStorage: AsyncLocalStorage) {
     // Set up all the event handlers that the SW needs.
 
     // The install event is triggered when the service worker is first
@@ -149,9 +157,14 @@ export class Driver implements Debuggable, UpdateSource {
     this.scope.addEventListener('fetch', (event) => this.onFetch(event !));
     this.scope.addEventListener('message', (event) => this.onMessage(event !));
     this.scope.addEventListener('push', (event) => this.onPush(event !));
-    this.scope.addEventListener(
-        'pushsubscriptionchange', (event) => this.onPushSubscriptionChange(event !));
+    this.scope.addEventListener('pushsubscriptionchange',
+      (event) => event ? event.waitUntil(this.handlePushStatus()): true);
     this.scope.addEventListener('notificationclick', (event) => this.onNotificationClick(event !));
+    this.scope.addEventListener('sync', (event) => {
+      if (event && event.tag === 'push_sync') {
+        event.waitUntil(this.handlePushStatus());
+      }
+    });
 
     // The debugger generates debug pages in response to debugging requests.
     this.debugger = new DebugHandler(this, this.adapter);
@@ -310,6 +323,64 @@ export class Driver implements Debuggable, UpdateSource {
       await this.reportStatus(from, action, msg.statusNonce);
     } else if (isMsgActivateUpdate(msg)) {
       await this.reportStatus(from, this.updateClient(from), msg.statusNonce);
+    } else if(isMsgStatusPush(msg)) {
+      await this.reportStatus(from, this.handleRequestedPush(msg.subscription), msg.statusNonce);
+    }
+  }
+
+  private async handleRequestedPush(subscription: PushSubscription | null) {
+    try {
+      await this.localStorage.open();
+      if (subscription) {
+        await this.localStorage.setItem('subscription', JSON.stringify(subscription));
+        await this.enablePushSync();
+      } else {
+        await this.localStorage.removeItem('subscription');
+      }
+    } catch(e) {
+      this.debugger.log(e);
+    } finally {
+      this.localStorage.close();
+    }
+  }
+
+  private async handlePushStatus() {
+    try {
+      await this.localStorage.open();
+      const pushManager = this.scope.registration.pushManager;
+      const pushState = await pushManager.permissionState({userVisibleOnly: true});
+      if (pushState === 'granted') {
+        const subscription  = await pushManager.getSubscription();
+        if (subscription) {
+          const oldRawSubscription = await this.localStorage.getItem('subscription');
+          await this.localStorage.setItem('subscription', JSON.stringify(subscription));
+          if (oldRawSubscription) {
+            const oldSubscription = <PushSubscription>JSON.parse(oldRawSubscription);
+            if (oldSubscription.endpoint !== subscription.endpoint) {
+              this.onPushSubscriptionChange(<PushSubscriptionChangeEvent>{
+                oldSubscription: oldSubscription,
+                newSubscription: subscription
+              });
+            }
+          }
+        } else {
+          this.debugger.log('Handle push status enabled but no subscription.');
+        }
+      }
+    } catch(e) {
+      this.debugger.log(e);
+    } finally {
+      this.localStorage.close();
+    }
+  }
+
+  private async enablePushSync() {
+    if(this.scope.registration.sync) {
+      const tags = await this.scope.registration.sync.getTags();
+
+      if (!tags.find(t => t === 'push_sync')) {
+        await this.scope.registration.sync.register('push_sync');
+      }
     }
   }
 

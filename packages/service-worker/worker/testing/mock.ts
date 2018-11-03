@@ -10,6 +10,7 @@ import {AssetGroupConfig, Manifest} from '../src/manifest';
 import {sha1} from '../src/sha1';
 
 import {MockResponse} from './fetch';
+import {AsyncLocalStorage} from '@angular/service-worker/worker/src/local-storage';
 
 export type HeaderMap = {
   [key: string]: string
@@ -222,4 +223,31 @@ export function tmpHashTable(manifest: Manifest): Map<string, string> {
     map.set(url, hash);
   });
   return map;
+}
+
+
+export class MockAsyncLocalStorage implements AsyncLocalStorage {
+  clear(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  close(): void {
+  }
+
+  getItem(key: string): Promise<string | null> {
+    return Promise.resolve(null);
+  }
+
+  open(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  removeItem(key: string): Promise<void> {
+    return Promise.resolve();
+  }
+
+  setItem(key: string, data: string): Promise<void> {
+    return Promise.resolve();
+  }
+
 }
