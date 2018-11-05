@@ -60,14 +60,21 @@ export class IndexedDbLocalStorage implements AsyncLocalStorage {
 
   private database: IDBDatabase | null;
 
+  private sessions = 0;
+
   constructor() {
   }
 
   open(): Promise<void> {
+    if (this.database) {
+      this.sessions++;
+      return Promise.resolve();
+    }
     // @ts-ignore
     return new Promise<boolean>((resolve, reject) => {
       const connection = indexedDB.open(IndexedDbLocalStorage.DBNAME, 1);
       connection.onsuccess = (ev) => {
+        this.sessions++;
         this.database = (<any>ev.target).result;
         resolve();
       };
@@ -136,7 +143,8 @@ export class IndexedDbLocalStorage implements AsyncLocalStorage {
   }
 
   close() {
-    if (this.database) {
+    this.sessions--;
+    if (this.database && this.sessions == 0) {
       this.database.close();
       this.database = null;
     }

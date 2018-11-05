@@ -54,6 +54,23 @@ import {IndexedDbLocalStorage} from '../src/local-storage';
           expect(await database.getItem('unknown')).toBeNull();
         });
 
+      async_it('Should manage multiple connection properly', async () => {
+        console.log('heeeeeeeeeeeeeeee');
+        await database.open();
+        await database.open();
+        await database.setItem('foo', 'bbb');
+        let item = await database.getItem('foo');
+        expect(item).toBe('bbb');
+        database.close();
+        let itemAfterClose = await database.getItem('foo');
+        expect(itemAfterClose).toBe('bbb');
+        database.close();
+        try {
+            await database.getItem('foo');
+            throw new Error('Connection here shouldn\'t be opened');
+        } catch (e) {}
+      });
+
       it('Should close conection properly', (done) => {
         database.open().then(() => {
           database.close();
