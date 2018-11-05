@@ -17,7 +17,6 @@ import {take as op_take} from 'rxjs/operator/take';
 import {toPromise as op_toPromise} from 'rxjs/operator/toPromise';
 
 import {ERR_SW_NOT_SUPPORTED, NgswCommChannel} from './low_level';
-import {MsgStatusPush} from '@angular/service-worker/worker/src/msg';
 
 
 /**
@@ -52,13 +51,13 @@ export class SwPush {
     this.subscription = obs_merge(workerDrivenSubscriptions, this.subscriptionChanges);
 
     this.subscription.subscribe(subscription => {
-      const pushData: MsgStatusPush = {
+      let pushData = {
         action: 'STATUS_PUSH',
         statusNonce: this.sw.generateNonce(),
         subscription: null
       };
       if (typeof(PushSubscription) === 'function' && subscription instanceof PushSubscription) {
-        pushData.subscription = subscription;
+        pushData.subscription = <any>subscription;
       }
       this.sw.postMessageWithStatus('STATUS_PUSH', pushData, pushData.statusNonce);
     });
