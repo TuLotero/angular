@@ -54,8 +54,7 @@ import {IndexedDbLocalStorage} from '../src/local-storage';
           expect(await database.getItem('unknown')).toBeNull();
         });
 
-      async_it('Should manage multiple connection properly', async () => {
-        console.log('heeeeeeeeeeeeeeee');
+      it('Should manage multiple connection properly', async (done: DoneFn) => {
         await database.open();
         await database.open();
         await database.setItem('foo', 'bbb');
@@ -67,8 +66,10 @@ import {IndexedDbLocalStorage} from '../src/local-storage';
         database.close();
         try {
             await database.getItem('foo');
-            throw new Error('Connection here shouldn\'t be opened');
-        } catch (e) {}
+            done.fail(new Error('Connection here shouldn\'t be opened'));
+        } catch (e) {
+          done();
+        }
       });
 
       it('Should close conection properly', (done) => {
