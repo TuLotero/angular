@@ -57,7 +57,7 @@ export class SwPush {
         subscription: null
       };
       if (typeof(PushSubscription) === 'function' && subscription instanceof PushSubscription) {
-        pushData.subscription = <any>subscription;
+        pushData.subscription = JSON.parse(JSON.stringify(subscription));
       }
       this.sw.postMessageWithStatus('STATUS_PUSH', pushData, pushData.statusNonce);
     });
