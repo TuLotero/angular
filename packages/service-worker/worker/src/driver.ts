@@ -376,7 +376,7 @@ export class Driver implements Debuggable, UpdateSource {
           if (oldRawSubscription) {
             const oldSubscription = <PushSubscription>JSON.parse(oldRawSubscription);
             if (oldSubscription.endpoint !== subscription.endpoint) {
-              this.onPushSubscriptionChange(<PushSubscriptionChangeEvent>{
+              await this.onPushSubscriptionChange(<PushSubscriptionChangeEvent>{
                 oldSubscription: oldSubscription,
                 newSubscription: subscription
               });

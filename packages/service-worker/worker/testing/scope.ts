@@ -87,6 +87,7 @@ export class SwTestHarness implements ServiceWorkerGlobalScope, Adapter, Context
   autoAdvanceTime = false;
   // TODO(issue/24571): remove '!'.
   unregistered !: boolean;
+  readonly location: Location = <Location>{};
   readonly notifications: {title: string, options: Object}[] = [];
   readonly registration: ServiceWorkerRegistration = {
     active: {
