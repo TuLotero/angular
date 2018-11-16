@@ -14,11 +14,14 @@ export interface Manifest {
   configVersion: number;
   appData?: {[key: string]: string};
   index: string;
+  push?: PushConfig;
   assetGroups?: AssetGroupConfig[];
   dataGroups?: DataGroupConfig[];
   navigationUrls: {positive: boolean, regex: string}[];
   hashTable: {[url: string]: string};
 }
+
+export interface PushConfig { url: string; }
 
 export interface AssetGroupConfig {
   name: string;

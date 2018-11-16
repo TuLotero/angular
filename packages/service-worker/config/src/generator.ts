@@ -33,6 +33,7 @@ export class Generator {
     return {
       configVersion: 1,
       appData: config.appData,
+      push: config.push,
       index: joinUrls(this.baseHref, config.index), assetGroups,
       dataGroups: this.processDataGroups(config),
       hashTable: withOrderedKeys(unorderedHashTable),

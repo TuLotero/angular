@@ -27,6 +27,9 @@ import {MockFilesystem} from '../testing/mock';
           test: true,
         },
         index: '/index.html',
+        push: {
+          url: 'foo'
+        },
         assetGroups: [{
           name: 'test',
           resources: {
@@ -75,6 +78,9 @@ import {MockFilesystem} from '../testing/mock';
                test: true,
              },
              index: '/test/index.html',
+             push: {
+               'url': 'foo'
+             },
              assetGroups: [{
                name: 'test',
                installMode: 'prefetch',
@@ -140,6 +146,9 @@ import {MockFilesystem} from '../testing/mock';
              configVersion: 1,
              appData: undefined,
              index: '/test/index.html',
+             push: {
+               url: 'foo'
+             },
              assetGroups: [],
              dataGroups: [],
              navigationUrls: [

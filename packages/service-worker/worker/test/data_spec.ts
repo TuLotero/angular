@@ -14,6 +14,7 @@ import {MockFileSystemBuilder, MockServerStateBuilder, tmpHashTableForFs} from '
 import {SwTestHarness, SwTestHarnessBuilder} from '../testing/scope';
 
 import {async_beforeEach, async_fit, async_it} from './async';
+import {AsyncLocalStorage} from '@angular/service-worker/worker/src/local-storage';
 
 const dist = new MockFileSystemBuilder()
                  .addFile('/foo.txt', 'this is foo')
@@ -126,7 +127,8 @@ function asyncWrap(fn: () => Promise<void>): (done: DoneFn) => void {
     async_beforeEach(async() => {
       server.clearRequests();
       scope = new SwTestHarnessBuilder().withServerState(server).build();
-      driver = new Driver(scope, scope, new CacheDatabase(scope, scope));
+      // @ts-ignore
+      driver = new Driver(scope, scope, new CacheDatabase(scope, scope), <AsyncLocalStorage>{});
 
       // Initialize.
       expect(await makeRequest(scope, '/foo.txt')).toEqual('this is foo');

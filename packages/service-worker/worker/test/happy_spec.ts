@@ -17,6 +17,7 @@ import {MockFileSystemBuilder, MockServerStateBuilder, tmpHashTableForFs} from '
 import {SwTestHarness, SwTestHarnessBuilder} from '../testing/scope';
 
 import {async_beforeEach, async_fit, async_it} from './async';
+import {AsyncLocalStorage} from '../src/local-storage';
 
 const dist =
     new MockFileSystemBuilder()
@@ -207,7 +208,8 @@ const manifestUpdateHash = sha1(JSON.stringify(manifestUpdate));
       brokenServer.reset();
 
       scope = new SwTestHarnessBuilder().withServerState(server).build();
-      driver = new Driver(scope, scope, new CacheDatabase(scope, scope));
+      // @ts-ignore
+      driver = new Driver(scope, scope, new CacheDatabase(scope, scope), <AsyncLocalStorage>{});
     });
 
     async_it('activates without waiting', async() => {
@@ -413,7 +415,8 @@ const manifestUpdateHash = sha1(JSON.stringify(manifestUpdate));
                   .withCacheState(scope.caches.dehydrate())
                   .withServerState(serverUpdate)
                   .build();
-      driver = new Driver(scope, scope, new CacheDatabase(scope, scope));
+      // @ts-ignore
+      driver = new Driver(scope, scope, new CacheDatabase(scope, scope), <AsyncLocalStorage>{});
       expect(await makeRequest(scope, '/foo.txt')).toEqual('this is foo');
       await driver.initialized;
       serverUpdate.assertNoOtherRequests();
@@ -475,7 +478,8 @@ const manifestUpdateHash = sha1(JSON.stringify(manifestUpdate));
                   .withCacheState(scope.caches.dehydrate())
                   .withServerState(serverUpdate)
                   .build();
-      driver = new Driver(scope, scope, new CacheDatabase(scope, scope));
+      // @ts-ignore
+      driver = new Driver(scope, scope, new CacheDatabase(scope, scope), <AsyncLocalStorage>{});
 
       expect(await makeRequest(scope, '/foo.txt')).toEqual('this is foo');
       expect(await makeRequest(scope, '/foo.txt', 'new')).toEqual('this is foo v2');
@@ -542,7 +546,8 @@ const manifestUpdateHash = sha1(JSON.stringify(manifestUpdate));
                   .withCacheState(scope.caches.dehydrate())
                   .withServerState(serverUpdate)
                   .build();
-      driver = new Driver(scope, scope, new CacheDatabase(scope, scope));
+      // @ts-ignore
+      driver = new Driver(scope, scope, new CacheDatabase(scope, scope), <AsyncLocalStorage>{});
       expect(await makeRequest(scope, '/foo.txt')).toEqual('this is foo');
       await driver.initialized;
       serverUpdate.assertNoOtherRequests();
@@ -557,7 +562,8 @@ const manifestUpdateHash = sha1(JSON.stringify(manifestUpdate));
       await driver.idle.empty;
       serverUpdate.clearRequests();
 
-      driver = new Driver(scope, scope, new CacheDatabase(scope, scope));
+      // @ts-ignore
+      driver = new Driver(scope, scope, new CacheDatabase(scope, scope), <AsyncLocalStorage>{});
       expect(await makeRequest(scope, '/foo.txt')).toEqual('this is foo v2');
 
       keys = await scope.caches.keys();
@@ -714,7 +720,8 @@ const manifestUpdateHash = sha1(JSON.stringify(manifestUpdate));
 
         const state = scope.caches.dehydrate();
         scope = new SwTestHarnessBuilder().withCacheState(state).withServerState(server).build();
-        driver = new Driver(scope, scope, new CacheDatabase(scope, scope));
+        // @ts-ignore
+        driver = new Driver(scope, scope, new CacheDatabase(scope, scope), <AsyncLocalStorage>{});
         expect(await makeRequest(scope, '/foo.txt')).toEqual('this is foo');
         await driver.initialized;
         server.assertNoRequestFor('/unhashed/a.txt');
@@ -739,7 +746,8 @@ const manifestUpdateHash = sha1(JSON.stringify(manifestUpdate));
                     .withCacheState(scope.caches.dehydrate())
                     .withServerState(serverUpdate)
                     .build();
-        driver = new Driver(scope, scope, new CacheDatabase(scope, scope));
+        // @ts-ignore
+        driver = new Driver(scope, scope, new CacheDatabase(scope, scope), <AsyncLocalStorage>{});
         expect(await makeRequest(scope, '/foo.txt')).toEqual('this is foo');
         await driver.initialized;
 
@@ -910,7 +918,8 @@ const manifestUpdateHash = sha1(JSON.stringify(manifestUpdate));
       async_it('does not crash with bad index hash', async() => {
         scope = new SwTestHarnessBuilder().withServerState(brokenServer).build();
         (scope.registration as any).scope = 'http://site.com';
-        driver = new Driver(scope, scope, new CacheDatabase(scope, scope));
+        // @ts-ignore
+        driver = new Driver(scope, scope, new CacheDatabase(scope, scope), <AsyncLocalStorage>{});
 
         expect(await makeRequest(scope, '/foo.txt')).toEqual('this is foo');
       });
@@ -924,7 +933,8 @@ const manifestUpdateHash = sha1(JSON.stringify(manifestUpdate));
                     .withCacheState(scope.caches.dehydrate())
                     .withServerState(brokenServer)
                     .build();
-        driver = new Driver(scope, scope, new CacheDatabase(scope, scope));
+        // @ts-ignore
+        driver = new Driver(scope, scope, new CacheDatabase(scope, scope), <AsyncLocalStorage>{});
         await driver.checkForUpdate();
 
         scope.advance(12000);
