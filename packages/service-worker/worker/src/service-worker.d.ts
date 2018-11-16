@@ -38,6 +38,7 @@ interface Clients {
   claim(): Promise<any>;
   get(id: string): Promise<Client>;
   matchAll(options?: ClientMatchOptions): Promise<Array<Client>>;
+  openWindow(url: string): Promise<WindowClient>;
 }
 
 interface ClientMatchOptions {
@@ -90,6 +91,11 @@ interface PushMessageData {
   text(): string;
 }
 
+interface PushSubscriptionChangeEvent extends ExtendableEvent {
+  readonly newSubscription?: PushSubscription;
+  readonly oldSubscription?: PushSubscription;
+}
+
 // Sync API
 
 interface SyncEvent extends ExtendableEvent {
@@ -108,12 +114,15 @@ interface ServiceWorkerGlobalScope {
   caches: CacheStorage;
   clients: Clients;
   registration: ServiceWorkerRegistration;
+  location: Location;
 
   addEventListener(event: 'activate', fn: (event?: ExtendableEvent) => any): void;
   addEventListener(event: 'message', fn: (event?: ExtendableMessageEvent) => any): void;
   addEventListener(event: 'fetch', fn: (event?: FetchEvent) => any): void;
   addEventListener(event: 'install', fn: (event?: ExtendableEvent) => any): void;
   addEventListener(event: 'push', fn: (event?: PushEvent) => any): void;
+  addEventListener(
+      event: 'pushsubscriptionchange', fn: (event?: PushSubscriptionChangeEvent) => any): void;
   addEventListener(event: 'notificationclick', fn: (event?: NotificationEvent) => any): void;
   addEventListener(event: 'sync', fn: (event?: SyncEvent) => any): void;
 

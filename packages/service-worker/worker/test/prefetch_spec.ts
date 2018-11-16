@@ -25,6 +25,7 @@ const server = new MockServerStateBuilder().withStaticFiles(dist).withManifest(m
 
 const scope = new SwTestHarnessBuilder().withServerState(server).build();
 
+// @ts-ignore
 const db = new CacheDatabase(scope, scope);
 
 
@@ -41,7 +42,9 @@ const db = new CacheDatabase(scope, scope);
       idle = new IdleScheduler(null !, 3000, {
         log: (v, ctx = '') => console.error(v, ctx),
       });
+
       group = new PrefetchAssetGroup(
+        // @ts-ignore
           scope, scope, idle, manifest.assetGroups ![0], tmpHashTable(manifest), db, 'test');
     });
     async_it('initializes without crashing', async() => { await group.initializeFully(); });
@@ -55,10 +58,14 @@ const db = new CacheDatabase(scope, scope);
     });
     async_it('persists the cache across restarts', async() => {
       await group.initializeFully();
+
+      // @ts-ignore
       const freshScope =
           new SwTestHarnessBuilder().withCacheState(scope.caches.dehydrate()).build();
       group = new PrefetchAssetGroup(
+        // @ts-ignore
           freshScope, freshScope, idle, manifest.assetGroups ![0], tmpHashTable(manifest),
+        // @ts-ignore
           new CacheDatabase(freshScope, freshScope), 'test');
       await group.initializeFully();
       const res1 = await group.handleFetch(scope.newRequest('/foo.txt'), scope);
@@ -75,12 +82,15 @@ const db = new CacheDatabase(scope, scope);
       await group.initializeFully();
     });
     async_it('throws if the server-side content does not match the manifest hash', async() => {
+      // @ts-ignore
       const badHashFs = dist.extend().addFile('/foo.txt', 'corrupted file').build();
       const badServer =
           new MockServerStateBuilder().withManifest(manifest).withStaticFiles(badHashFs).build();
       const badScope = new SwTestHarnessBuilder().withServerState(badServer).build();
       group = new PrefetchAssetGroup(
+        // @ts-ignore
           badScope, badScope, idle, manifest.assetGroups ![0], tmpHashTable(manifest),
+        // @ts-ignore
           new CacheDatabase(badScope, badScope), 'test');
       const err = await errorFrom(group.initializeFully());
       expect(err.message).toContain('Hash mismatch');
