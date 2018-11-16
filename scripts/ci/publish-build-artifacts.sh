@@ -61,13 +61,6 @@ function publishRepo {
   rm -rf $REPO_DIR/*
   cp -R $ARTIFACTS_DIR/* $REPO_DIR/
 
-  if [[ ${CI} ]]; then
-    (
-      # The file ~/.git_credentials is created in /.circleci/config.yml
-      cd $REPO_DIR && \
-      git config credential.helper "store --file=$HOME/.git_credentials"
-    )
-  fi
   echo `date` > $REPO_DIR/BUILD_INFO
   echo $SHA >> $REPO_DIR/BUILD_INFO
 
@@ -105,7 +98,9 @@ function publishPackages {
       die "Don't have a way to publish to scheme $GIT_SCHEME"
     fi
 
-    publishRepo "${COMPONENT}" "${JS_BUILD_ARTIFACTS_DIR}"
+    if [[ "$COMPONENT" == "service-worker" ]]; then
+      publishRepo "${COMPONENT}" "${JS_BUILD_ARTIFACTS_DIR}"
+    fi
   done
 
   echo "Finished publishing build artifacts"
