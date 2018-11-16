@@ -71,8 +71,13 @@ export class MockClients implements Clients {
   }
 
   async claim(): Promise<any> {}
+
+  openWindow(url: string): Promise<WindowClient> {
+    return <Promise<WindowClient>>{};
+  }
 }
 
+// @ts-ignore
 export class SwTestHarness implements ServiceWorkerGlobalScope, Adapter, Context {
   readonly clients = new MockClients();
   private eventHandlers = new Map<string, Function>();
