@@ -148,7 +148,20 @@ import {async_fit, async_it} from './async';
         push = new SwPush(comm);
         mock.setupSw();
       });
-
+      it('receives push messages', (done: DoneFn) => {
+        push.messages.subscribe(msg => {
+          expect(msg).toEqual({
+            message: 'this was a push message',
+          });
+          done();
+        });
+        mock.sendMessage({
+          type: 'PUSH',
+          data: {
+            message: 'this was a push message',
+          },
+        });
+      });
       it('is injectable', () => {
         TestBed.configureTestingModule({
           providers: [

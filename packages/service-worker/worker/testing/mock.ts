@@ -10,6 +10,7 @@ import {AssetGroupConfig, Manifest} from '../src/manifest';
 import {sha1} from '../src/sha1';
 
 import {MockResponse} from './fetch';
+import {AsyncLocalStorage} from '../../worker/src/local-storage';
 
 export type HeaderMap = {
   [key: string]: string
@@ -223,4 +224,36 @@ export function tmpHashTable(manifest: Manifest): Map<string, string> {
     map.set(url, hash);
   });
   return map;
+}
+
+
+export class MockAsyncLocalStorage implements AsyncLocalStorage {
+  clear(): Promise<void> {
+    // @ts-ignore
+    return Promise.resolve();
+  }
+
+  close(): void {
+  }
+
+  getItem(key: string): Promise<string | null> {
+    // @ts-ignore
+    return Promise.resolve(null);
+  }
+
+  open(): Promise<void> {
+    // @ts-ignore
+    return Promise.resolve();
+  }
+
+  removeItem(key: string): Promise<void> {
+    // @ts-ignore
+    return Promise.resolve();
+  }
+
+  setItem(key: string, data: string): Promise<void> {
+    // @ts-ignore
+    return Promise.resolve();
+  }
+
 }

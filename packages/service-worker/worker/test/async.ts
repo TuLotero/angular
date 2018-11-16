@@ -18,6 +18,10 @@ export function async_beforeEach(fn: () => Promise<void>): void {
   beforeEach(wrap(fn));
 }
 
+export function async_afterEach(fn: () => Promise<void>): void {
+  afterEach(wrap(fn));
+}
+
 export function async_it(desc: string, fn: () => Promise<void>): void {
   it(desc, wrap(fn));
 }
