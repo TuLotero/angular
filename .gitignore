@@ -2,6 +2,12 @@
 
 /dist/
 /bazel-out/
+/bazel-angular
+/bazel-bin
+/bazel-genfiles
+/bazel-testlogs
+/bazel-out
+/tmp
 /integration/bazel/bazel-*
 e2e_test.*
 node_modules

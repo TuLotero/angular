@@ -29,6 +29,9 @@ describe('Generator', () => {
       push: {
         url: 'foo'
       },
+      debug: {
+        endpoint: 'foo'
+      },
       assetGroups: [{
         name: 'test',
         resources: {
@@ -79,6 +82,9 @@ describe('Generator', () => {
            index: '/test/index.html',
            push: {
              'url': 'foo'
+           },
+           debug: {
+             endpoint: 'foo'
            },
            assetGroups: [{
              name: 'test',
@@ -144,6 +150,8 @@ describe('Generator', () => {
          expect(config).toEqual({
            configVersion: 1,
            appData: undefined,
+           push: undefined,
+           debug: undefined,
            index: '/test/index.html',
            assetGroups: [],
            dataGroups: [],

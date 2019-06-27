@@ -115,6 +115,7 @@ interface ServiceWorkerGlobalScope {
   clients: Clients;
   registration: ServiceWorkerRegistration;
   location: Location;
+  navigator: Navigator;
 
   addEventListener(event: 'activate', fn: (event?: ExtendableEvent) => any): void;
   addEventListener(event: 'message', fn: (event?: ExtendableMessageEvent) => any): void;

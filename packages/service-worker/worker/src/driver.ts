@@ -7,10 +7,19 @@
  */
 
 import {Adapter} from './adapter';
-import {CacheState, DebugIdleState, DebugState, DebugVersion, Debuggable, UpdateCacheStatus, UpdateSource} from './api';
+import {
+  CacheState,
+  DebugIdleState,
+  DebugState,
+  DebugVersion,
+  Debuggable,
+  UpdateCacheStatus,
+  UpdateSource,
+  DebugLogger
+} from './api';
 import {AppVersion} from './app-version';
 import {Database} from './database';
-import {DebugHandler} from './debug';
+import {DebugHandler, ServerDebug} from './debug';
 import {errorToString} from './error';
 import {IdleScheduler} from './idle';
 import {Manifest, ManifestHash, hashManifest} from './manifest';
@@ -111,7 +120,7 @@ export class Driver implements Debuggable, UpdateSource {
    */
   idle: IdleScheduler;
 
-  debugger: DebugHandler;
+  debugger: DebugLogger;
 
   constructor(private scope: ServiceWorkerGlobalScope,
               private adapter: Adapter,
@@ -199,7 +208,12 @@ export class Driver implements Debuggable, UpdateSource {
     if (this.adapter.parseUrl(req.url, this.scope.registration.scope).path === '/ngsw/state') {
       // Allow the debugger to handle the request, but don't affect SW state in any
       // other way.
-      event.respondWith(this.debugger.handleFetch(req));
+      if(this.debugger instanceof DebugHandler) {
+        event.respondWith(this.debugger.handleFetch(req));
+      } else {
+        event.respondWith(this.adapter.newResponse('Debugger is configured to log on server',
+          {headers: this.adapter.newHeaders({'Content-Type': 'text/plain'})}));
+      }
       return;
     }
 
@@ -644,6 +658,9 @@ export class Driver implements Debuggable, UpdateSource {
     // Set the latest version.
     this.latestHash = latest.latest;
 
+    // Change debugger to server if it's configured to that.
+    this.checkDebuggerInstance();
+
     // Finally, assert that the latest version is in fact loaded.
     if (!this.versions.has(latest.latest)) {
       throw new Error(
@@ -891,6 +908,9 @@ export class Driver implements Debuggable, UpdateSource {
     // Future new clients will use this hash as the latest version.
     this.latestHash = hash;
 
+    // Change debugger if manifest has configuration about
+    this.checkDebuggerInstance();
+
     await this.sync();
     await this.notifyClientsAboutUpdate();
   }
@@ -1046,6 +1066,20 @@ export class Driver implements Debuggable, UpdateSource {
           // No result has been found yet. Try the next `AppVersion`.
           return version.lookupResourceWithHash(url, hash);
         }, Promise.resolve<Response|null>(null));
+  }
+
+  /**
+   * Determine what debugger should use reading the manifest
+   */
+  private checkDebuggerInstance() {
+    if(this.latestHash){
+      const appVersion = this.versions.get(this.latestHash);
+      if(appVersion && appVersion.manifest && appVersion.manifest.debug) {
+        this.debugger = new ServerDebug(this.scope, this.adapter, appVersion.manifest);
+      } else if(this.debugger instanceof ServerDebug) {
+        this.debugger = new DebugHandler(this, this.adapter);
+      }
+    }
   }
 
   async lookupResourceWithoutHash(url: string): Promise<CacheState|null> {

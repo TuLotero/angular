@@ -1026,7 +1026,8 @@ const manifestUpdateHash = sha1(JSON.stringify(manifestUpdate));
                                .build();
 
           scope = new SwTestHarnessBuilder().withServerState(serverV5).build();
-          driver = new Driver(scope, scope, new CacheDatabase(scope, scope));
+          // @ts-ignore
+          driver = new Driver(scope, scope, new CacheDatabase(scope, scope), <AsyncLocalStorage>{});
         });
 
         // Test this bug: https://github.com/angular/angular/issues/27209

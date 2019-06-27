@@ -34,6 +34,7 @@ export class Generator {
       configVersion: 1,
       appData: config.appData,
       push: config.push,
+      debug: config.debug,
       index: joinUrls(this.baseHref, config.index), assetGroups,
       dataGroups: this.processDataGroups(config),
       hashTable: withOrderedKeys(unorderedHashTable),
