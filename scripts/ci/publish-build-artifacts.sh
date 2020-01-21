@@ -112,7 +112,9 @@ function publishPackages {
       die "Don't have a way to publish to scheme $GIT_SCHEME"
     fi
 
-    publishRepo "${COMPONENT}" "${JS_BUILD_ARTIFACTS_DIR}"
+    if [[ "$COMPONENT" == "service-worker" ]]; then
+      publishRepo "${COMPONENT}" "${JS_BUILD_ARTIFACTS_DIR}"
+    fi
   done
 
   echo "Finished publishing build artifacts"
