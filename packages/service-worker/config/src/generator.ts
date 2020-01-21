@@ -34,6 +34,7 @@ export class Generator {
       configVersion: 1,
       timestamp: Date.now(),
       appData: config.appData,
+      push: config.push,
       index: joinUrls(this.baseHref, config.index),
       assetGroups,
       dataGroups: this.processDataGroups(config),

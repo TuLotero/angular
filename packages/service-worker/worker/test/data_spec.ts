@@ -8,6 +8,7 @@
 
 import {CacheDatabase} from '../src/db-cache';
 import {Driver} from '../src/driver';
+import {AsyncLocalStorage} from '../src/local-storage';
 import {Manifest} from '../src/manifest';
 import {MockCache} from '../testing/cache';
 import {MockRequest} from '../testing/fetch';
@@ -127,7 +128,7 @@ describe('data cache', () => {
   let driver: Driver;
   beforeEach(async () => {
     scope = new SwTestHarnessBuilder().withServerState(server).build();
-    driver = new Driver(scope, scope, new CacheDatabase(scope));
+    driver = new Driver(scope, scope, new CacheDatabase(scope), <AsyncLocalStorage>{});
 
     // Initialize.
     expect(await makeRequest(scope, '/foo.txt')).toEqual('this is foo');

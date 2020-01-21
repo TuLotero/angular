@@ -7,15 +7,16 @@
  */
 
 import {Adapter} from './adapter';
-import {CacheState, Debuggable, DebugIdleState, DebugState, DebugVersion, NormalizedUrl, UpdateCacheStatus, UpdateSource} from './api';
+import {CacheState, Debuggable, DebugIdleState, DebugState, DebugVersion, NormalizedUrl, PushSubscriptionChangeEvent, UpdateCacheStatus, UpdateSource} from './api';
 import {AppVersion} from './app-version';
 import {Database} from './database';
 import {CacheTable} from './db-cache';
 import {DebugHandler} from './debug';
 import {errorToString} from './error';
 import {IdleScheduler} from './idle';
+import {AsyncLocalStorage} from './local-storage';
 import {hashManifest, Manifest, ManifestHash} from './manifest';
-import {isMsgActivateUpdate, isMsgCheckForUpdates, MsgAny} from './msg';
+import {isMsgActivateUpdate, isMsgCheckForUpdates, isMsgStatusPush, MsgAny} from './msg';
 
 type ClientId = string;
 
@@ -115,7 +116,8 @@ export class Driver implements Debuggable, UpdateSource {
   private controlTable = this.db.open('control');
 
   constructor(
-      private scope: ServiceWorkerGlobalScope, private adapter: Adapter, private db: Database) {
+      private scope: ServiceWorkerGlobalScope, private adapter: Adapter, private db: Database,
+      private localStorage: AsyncLocalStorage) {
     // Set up all the event handlers that the SW needs.
 
     // The install event is triggered when the service worker is first installed.
@@ -167,6 +169,16 @@ export class Driver implements Debuggable, UpdateSource {
     this.scope.addEventListener('message', (event) => this.onMessage(event!));
     this.scope.addEventListener('push', (event) => this.onPush(event!));
     this.scope.addEventListener('notificationclick', (event) => this.onClick(event!));
+    this.scope.addEventListener(
+        'pushsubscriptionchange',
+        (event) => event ?
+            (event as PushSubscriptionChangeEvent).waitUntil(this.handlePushStatus()) :
+            true);
+    this.scope.addEventListener('sync', (event) => {
+      if (event && event.tag === 'push_sync') {
+        event.waitUntil(this.handlePushStatus());
+      }
+    });
 
     // The debugger generates debug pages in response to debugging requests.
     this.debugger = new DebugHandler(this, this.adapter);
@@ -291,6 +303,33 @@ export class Driver implements Debuggable, UpdateSource {
     event.waitUntil(this.handleClick(event.notification, event.action));
   }
 
+  /**
+   * The handler for subscription changes
+   *
+   * This will upload to backend server new subscription when server changes.
+   */
+  private async onPushSubscriptionChange(event: PushSubscriptionChangeEvent) {
+    const current = this.versions.get(this.latestHash!)!;
+    if (current) {
+      const manifest = current.manifest;
+      if (manifest.push) {
+        const req = this.adapter.newRequest(manifest.push.url, {
+          method: 'POST',
+          body: JSON.stringify(
+              {oldSubscription: event.oldSubscription, newSubscription: event.newSubscription})
+        });
+        const response = await this.scope.fetch(req);
+        if (!response.ok) {
+          this.debugger.log(
+              'Tried to upload new push subscription but server' +
+              ' responses with ' + response.status.toString());
+        }
+      }
+    } else {
+      this.debugger.log('Push subscription change: No version exists of app');
+    }
+  }
+
   private async ensureInitialized(event: ExtendableEvent): Promise<void> {
     // Since the SW may have just been started, it may or may not have been initialized already.
     // `this.initialized` will be `null` if initialization has not yet been attempted, or will be a
@@ -325,6 +364,53 @@ export class Driver implements Debuggable, UpdateSource {
       await this.reportStatus(from, action, msg.statusNonce);
     } else if (isMsgActivateUpdate(msg)) {
       await this.reportStatus(from, this.updateClient(from), msg.statusNonce);
+    } else if (isMsgStatusPush(msg)) {
+      await this.reportStatus(from, this.handleRequestedPush(msg.subscription), msg.statusNonce);
+    }
+  }
+
+  private async handleRequestedPush(subscription: PushSubscription|null) {
+    try {
+      await this.localStorage.open();
+      if (subscription) {
+        await this.localStorage.setItem('subscription', JSON.stringify(subscription));
+      } else {
+        await this.localStorage.removeItem('subscription');
+      }
+    } catch (e) {
+      this.debugger.log(e);
+    } finally {
+      this.localStorage.close();
+    }
+  }
+
+  private async handlePushStatus() {
+    try {
+      await this.localStorage.open();
+      const pushManager = this.scope.registration.pushManager;
+      const pushState = await pushManager.permissionState({userVisibleOnly: true});
+      if (pushState === 'granted') {
+        const subscription = await pushManager.getSubscription();
+        if (subscription) {
+          const oldRawSubscription = await this.localStorage.getItem('subscription');
+          await this.localStorage.setItem('subscription', JSON.stringify(subscription));
+          if (oldRawSubscription) {
+            const oldSubscription = <PushSubscription>JSON.parse(oldRawSubscription);
+            if (oldSubscription.endpoint !== subscription.endpoint) {
+              await this.onPushSubscriptionChange(<PushSubscriptionChangeEvent>{
+                oldSubscription: oldSubscription,
+                newSubscription: subscription
+              });
+            }
+          }
+        } else {
+          this.debugger.log('Handle push status enabled but no subscription.');
+        }
+      }
+    } catch (e) {
+      this.debugger.log(e);
+    } finally {
+      this.localStorage.close();
     }
   }
 

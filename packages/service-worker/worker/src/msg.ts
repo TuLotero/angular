@@ -36,3 +36,13 @@ export interface MsgCheckVersion {
 export function isMsgCheckVersion(msg: MsgAny): msg is MsgCheckVersion {
   return msg.action === 'CHECK_VERSION';
 }
+
+export interface MsgStatusPush {
+  action: 'STATUS_PUSH';
+  statusNonce: number;
+  subscription: PushSubscription|null;
+}
+
+export function isMsgStatusPush(msg: MsgAny): msg is MsgStatusPush {
+  return msg.action === 'STATUS_PUSH';
+}

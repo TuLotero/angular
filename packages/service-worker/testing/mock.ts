@@ -92,9 +92,14 @@ export class MockPushManager {
     this.subscription = new MockPushSubscription() as any;
     return Promise.resolve(this.subscription!);
   }
+
+  permissionState(options?: PushSubscriptionOptionsInit|undefined): Promise<PushPermissionState> {
+    return Promise.resolve(<PushPermissionState>'granted');
+  }
 }
 
 export class MockPushSubscription {
+  endpoint = 'foo';
   unsubscribe(): Promise<boolean> {
     return Promise.resolve(true);
   }

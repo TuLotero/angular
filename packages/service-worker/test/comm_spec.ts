@@ -151,6 +151,21 @@ import {MockPushManager, MockPushSubscription, MockServiceWorkerContainer, MockS
         mock.setupSw();
       });
 
+      it('receives push messages', (done: DoneFn) => {
+        push.messages.subscribe(msg => {
+          expect(msg).toEqual({
+            message: 'this was a push message',
+          });
+          done();
+        });
+        mock.sendMessage({
+          type: 'PUSH',
+          data: {
+            message: 'this was a push message',
+          },
+        });
+      });
+
       it('is injectable', () => {
         TestBed.configureTestingModule({
           providers: [

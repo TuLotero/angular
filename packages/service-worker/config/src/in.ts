@@ -24,10 +24,20 @@ export type Duration = string;
 export interface Config {
   appData?: {};
   index: string;
+  push?: PushConfig;
   assetGroups?: AssetGroup[];
   dataGroups?: DataGroup[];
   navigationUrls?: string[];
   navigationRequestStrategy?: 'freshness'|'performance';
+}
+
+/**
+ * Configuration for handling push subscription changes.
+ *
+ * @experimental
+ */
+export interface PushConfig {
+  url: string;
 }
 
 /**

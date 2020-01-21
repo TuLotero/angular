@@ -153,6 +153,18 @@ export class SwPush {
 
     const workerDrivenSubscriptions = this.pushManager.pipe(switchMap(pm => pm.getSubscription()));
     this.subscription = merge(workerDrivenSubscriptions, this.subscriptionChanges);
+
+    this.subscription.subscribe(subscription => {
+      let pushData = {
+        action: 'STATUS_PUSH',
+        statusNonce: this.sw.generateNonce(),
+        subscription: null
+      };
+      if (typeof (PushSubscription) === 'function' && subscription instanceof PushSubscription) {
+        pushData.subscription = JSON.parse(JSON.stringify(subscription));
+      }
+      this.sw.postMessageWithStatus('STATUS_PUSH', pushData, pushData.statusNonce);
+    });
   }
 
   /**

@@ -9,6 +9,7 @@
 import {processNavigationUrls} from '../../config/src/generator';
 import {CacheDatabase} from '../src/db-cache';
 import {Driver, DriverReadyState} from '../src/driver';
+import {AsyncLocalStorage} from '../src/local-storage';
 import {AssetGroupConfig, DataGroupConfig, Manifest} from '../src/manifest';
 import {sha1} from '../src/sha1';
 import {clearAllCaches, MockCache} from '../testing/cache';
@@ -306,7 +307,7 @@ describe('Driver', () => {
     brokenServer.reset();
 
     scope = new SwTestHarnessBuilder().withServerState(server).build();
-    driver = new Driver(scope, scope, new CacheDatabase(scope));
+    driver = new Driver(scope, scope, new CacheDatabase(scope), <AsyncLocalStorage>{});
   });
 
   it('activates without waiting', async () => {
@@ -559,7 +560,7 @@ describe('Driver', () => {
                 .withCacheState(scope.caches.original.dehydrate())
                 .withServerState(serverUpdate)
                 .build();
-    driver = new Driver(scope, scope, new CacheDatabase(scope));
+    driver = new Driver(scope, scope, new CacheDatabase(scope), <AsyncLocalStorage>{});
     expect(await makeRequest(scope, '/foo.txt')).toEqual('this is foo');
     await driver.initialized;
     serverUpdate.assertNoOtherRequests();
@@ -615,7 +616,7 @@ describe('Driver', () => {
                 .withCacheState(scope.caches.original.dehydrate())
                 .withServerState(serverUpdate)
                 .build();
-    driver = new Driver(scope, scope, new CacheDatabase(scope));
+    driver = new Driver(scope, scope, new CacheDatabase(scope), <AsyncLocalStorage>{});
 
     expect(await makeRequest(scope, '/foo.txt')).toEqual('this is foo');
     expect(await makeRequest(scope, '/foo.txt', 'new')).toEqual('this is foo v2');
@@ -677,7 +678,7 @@ describe('Driver', () => {
                 .withCacheState(scope.caches.original.dehydrate())
                 .withServerState(serverUpdate)
                 .build();
-    driver = new Driver(scope, scope, new CacheDatabase(scope));
+    driver = new Driver(scope, scope, new CacheDatabase(scope), <AsyncLocalStorage>{});
     expect(await makeRequest(scope, '/foo.txt')).toEqual('this is foo');
     await driver.initialized;
     serverUpdate.assertNoOtherRequests();
@@ -692,7 +693,7 @@ describe('Driver', () => {
     await driver.idle.empty;
     serverUpdate.clearRequests();
 
-    driver = new Driver(scope, scope, new CacheDatabase(scope));
+    driver = new Driver(scope, scope, new CacheDatabase(scope), <AsyncLocalStorage>{});
     expect(await makeRequest(scope, '/foo.txt')).toEqual('this is foo v2');
 
     keys = await scope.caches.keys();
@@ -1404,7 +1405,8 @@ describe('Driver', () => {
                            .withCacheState(initialCacheState)
                            .withServerState(serverState)
                            .build();
-      const newDriver = new Driver(newScope, newScope, new CacheDatabase(newScope));
+      const newDriver =
+          new Driver(newScope, newScope, new CacheDatabase(newScope), <AsyncLocalStorage>{});
 
       await makeRequest(newScope, newManifest.index, baseHref.replace(/\//g, '_'));
       await newDriver.initialized;
@@ -1553,7 +1555,7 @@ describe('Driver', () => {
 
       const state = scope.caches.original.dehydrate();
       scope = new SwTestHarnessBuilder().withCacheState(state).withServerState(server).build();
-      driver = new Driver(scope, scope, new CacheDatabase(scope));
+      driver = new Driver(scope, scope, new CacheDatabase(scope), <AsyncLocalStorage>{});
       expect(await makeRequest(scope, '/foo.txt')).toEqual('this is foo');
       await driver.initialized;
       server.assertNoRequestFor('/unhashed/a.txt');
@@ -1578,7 +1580,7 @@ describe('Driver', () => {
                   .withCacheState(scope.caches.original.dehydrate())
                   .withServerState(serverUpdate)
                   .build();
-      driver = new Driver(scope, scope, new CacheDatabase(scope));
+      driver = new Driver(scope, scope, new CacheDatabase(scope), <AsyncLocalStorage>{});
       expect(await makeRequest(scope, '/foo.txt')).toEqual('this is foo');
       await driver.initialized;
 
@@ -1911,7 +1913,7 @@ describe('Driver', () => {
     it('does not crash with bad index hash', async () => {
       scope = new SwTestHarnessBuilder().withServerState(brokenServer).build();
       (scope.registration as any).scope = 'http://site.com';
-      driver = new Driver(scope, scope, new CacheDatabase(scope));
+      driver = new Driver(scope, scope, new CacheDatabase(scope), <AsyncLocalStorage>{});
 
       expect(await makeRequest(scope, '/foo.txt')).toEqual('this is foo (broken)');
     });
@@ -1925,7 +1927,7 @@ describe('Driver', () => {
                   .withCacheState(scope.caches.original.dehydrate())
                   .withServerState(brokenServer)
                   .build();
-      driver = new Driver(scope, scope, new CacheDatabase(scope));
+      driver = new Driver(scope, scope, new CacheDatabase(scope), <AsyncLocalStorage>{});
       await driver.checkForUpdate();
 
       scope.advance(12000);
@@ -2444,7 +2446,7 @@ describe('Driver', () => {
                              .build();
 
         scope = new SwTestHarnessBuilder().withServerState(serverV5).build();
-        driver = new Driver(scope, scope, new CacheDatabase(scope));
+        driver = new Driver(scope, scope, new CacheDatabase(scope), <AsyncLocalStorage>{});
       });
 
       // Test this bug: https://github.com/angular/angular/issues/27209
