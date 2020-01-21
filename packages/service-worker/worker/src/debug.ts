@@ -8,6 +8,7 @@
 
 import {Adapter} from './adapter';
 import {Debuggable, DebugLogger} from './api';
+import {Manifest} from './manifest';
 
 const SW_VERSION = '0.0.0-PLACEHOLDER';
 const DEBUG_LOG_BUFFER_SIZE = 100;
@@ -111,5 +112,38 @@ ${msgIdle}`,
   private formatDebugLog(log: DebugMessage[]): string {
     return log.map(entry => `[${this.since(entry.time)}] ${entry.value} ${entry.context}`)
         .join('\n');
+  }
+}
+
+export class ServerDebug implements DebugLogger {
+  constructor(
+      readonly scope: ServiceWorkerGlobalScope, readonly adapter: Adapter,
+      readonly manifest: Manifest) {}
+
+  log(value: string|Error, context?: string): void {
+    if (this.manifest.debug) {
+      const errorMessage = typeof (value) === 'string' ? value : this.errorToString(value);
+      const body: any = {};
+      body['type'] = 'WEB';
+      body['message'] = 'Service worker log: ' + errorMessage;
+      body['device'] = this.scope.navigator.userAgent;
+
+      if (context) {
+        try {
+          body['context'] = JSON.stringify(context);
+        } catch (e) {
+          body['context'] = 'Failed to stringfy context, test serialize it';
+        }
+      }
+
+      const req = this.adapter.newRequest(
+          this.manifest.debug.endpoint, {method: 'PUT', body: JSON.stringify(body)});
+
+      this.scope.fetch(req);
+    }
+  }
+
+  private errorToString(err: Error): string {
+    return `${err.name}(${err.message}, ${err.stack})`;
   }
 }

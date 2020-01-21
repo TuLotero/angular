@@ -6,10 +6,10 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {DebugLogger} from '@angular/service-worker/worker/src/api';
 import {Adapter} from './adapter';
 import {Database, Table} from './database';
 import {CacheTable} from './db-cache';
-import {DebugHandler} from './debug';
 import {DataGroupConfig} from './manifest';
 import {NamedCache} from './named-cache-storage';
 
@@ -23,7 +23,8 @@ interface AgeRecord {
 /**
  * A node in the LRU chain for a given `DataGroup`.
  *
- * Serializable as previous/next are identified by their URL and are not references.
+ * Serializable as previous/next are identified by their URL and are not
+ * references.
  */
 interface LruNode {
   /**
@@ -216,13 +217,13 @@ class LruList {
 }
 
 /**
- * A group of cached resources determined by a set of URL patterns which follow a LRU policy
- * for caching.
+ * A group of cached resources determined by a set of URL patterns which follow
+ * a LRU policy for caching.
  */
 export class DataGroup {
   /**
-   * Compiled regular expression set used to determine which resources fall under the purview
-   * of this group.
+   * Compiled regular expression set used to determine which resources fall
+   * under the purview of this group.
    */
   private readonly patterns: RegExp[];
 
@@ -248,7 +249,7 @@ export class DataGroup {
 
   constructor(
       private scope: ServiceWorkerGlobalScope, private adapter: Adapter,
-      private config: DataGroupConfig, private db: Database, private debugHandler: DebugHandler,
+      private config: DataGroupConfig, private db: Database, private debugHandler: DebugLogger,
       cacheNamePrefix: string) {
     this.patterns = config.patterns.map(pattern => new RegExp(pattern));
     this.cache = adapter.caches.open(`${cacheNamePrefix}:${config.name}:cache`);
@@ -291,8 +292,8 @@ export class DataGroup {
   }
 
   /**
-   * Process a fetch event and return a `Response` if the resource is covered by this group,
-   * or `null` otherwise.
+   * Process a fetch event and return a `Response` if the resource is covered
+   * by this group, or `null` otherwise.
    */
   async handleFetch(req: Request, event: ExtendableEvent): Promise<Response|null> {
     // Do nothing
@@ -504,10 +505,11 @@ export class DataGroup {
 
   /**
    * Operation for caching the response from the server. This has to happen all
-   * at once, so that the cache and LRU tracking remain in sync. If the network request
-   * completes before the timeout, this logic will be run inline with the response flow.
-   * If the request times out on the server, an error will be returned but the real network
-   * request will still be running in the background, to be cached when it completes.
+   * at once, so that the cache and LRU tracking remain in sync. If the network
+   * request completes before the timeout, this logic will be run inline with
+   * the response flow. If the request times out on the server, an error will
+   * be returned but the real network request will still be running in the
+   * background, to be cached when it completes.
    */
   private async cacheResponse(req: Request, res: Response, lru: LruList, okToCacheOpaque = false):
       Promise<void> {
@@ -570,9 +572,10 @@ export class DataGroup {
   /**
    * Clear the state of the cache for a particular resource.
    *
-   * This doesn't remove the resource from the LRU table, that is assumed to have
-   * been done already. This clears the GET and HEAD versions of the request from
-   * the cache itself, as well as the metadata stored in the age table.
+   * This doesn't remove the resource from the LRU table, that is assumed to
+   * have been done already. This clears the GET and HEAD versions of the
+   * request from the cache itself, as well as the metadata stored in the age
+   * table.
    */
   private async clearCacheForUrl(url: string): Promise<void> {
     const [cache, ageTable] = await Promise.all([this.cache, this.ageTable]);

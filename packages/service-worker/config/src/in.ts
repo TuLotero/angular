@@ -25,6 +25,7 @@ export interface Config {
   appData?: {};
   index: string;
   push?: PushConfig;
+  debug?: DebugConfig;
   assetGroups?: AssetGroup[];
   dataGroups?: DataGroup[];
   navigationUrls?: string[];
@@ -38,6 +39,15 @@ export interface Config {
  */
 export interface PushConfig {
   url: string;
+}
+
+/**
+ * Configuration for handling debugger.
+ *
+ * @experimental
+ */
+export interface DebugConfig {
+  endpoint: string;
 }
 
 /**

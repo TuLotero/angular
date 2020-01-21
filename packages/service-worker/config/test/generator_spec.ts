@@ -29,7 +29,10 @@ describe('Generator', () => {
         test: true,
       },
       index: '/index.html',
-      push: {url: 'foo'},
+      push: {
+        url: 'foo',
+      },
+      debug: {endpoint: 'foo'},
       assetGroups: [{
         name: 'test',
         resources: {
@@ -77,7 +80,10 @@ describe('Generator', () => {
         test: true,
       },
       index: '/test/index.html',
-      push: {'url': 'foo'},
+      push: {
+        url: 'foo',
+      },
+      debug: {endpoint: 'foo'},
       assetGroups: [{
         name: 'test',
         installMode: 'prefetch',
@@ -143,6 +149,8 @@ describe('Generator', () => {
       configVersion: 1,
       timestamp: 1234567890123,
       appData: undefined,
+      push: undefined,
+      debug: undefined,
       index: '/test/index.html',
       assetGroups: [],
       dataGroups: [],

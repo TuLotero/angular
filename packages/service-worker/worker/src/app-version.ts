@@ -7,11 +7,10 @@
  */
 
 import {Adapter} from './adapter';
-import {CacheState, NormalizedUrl, UpdateCacheStatus, UpdateSource} from './api';
+import {CacheState, DebugLogger, NormalizedUrl, UpdateCacheStatus, UpdateSource} from './api';
 import {AssetGroup, LazyAssetGroup, PrefetchAssetGroup} from './assets';
 import {DataGroup} from './data';
 import {Database} from './database';
-import {DebugHandler} from './debug';
 import {IdleScheduler} from './idle';
 import {Manifest} from './manifest';
 
@@ -31,7 +30,8 @@ const BACKWARDS_COMPATIBILITY_NAVIGATION_URLS = [
  */
 export class AppVersion implements UpdateSource {
   /**
-   * A Map of absolute URL paths (`/foo.txt`) to the known hash of their contents (if available).
+   * A Map of absolute URL paths (`/foo.txt`) to the known hash of their
+   * contents (if available).
    */
   private hashTable = new Map<NormalizedUrl, string>();
 
@@ -46,14 +46,15 @@ export class AppVersion implements UpdateSource {
   private dataGroups: DataGroup[];
 
   /**
-   * Requests to URLs that match any of the `include` RegExps and none of the `exclude` RegExps
-   * are considered navigation requests and handled accordingly.
+   * Requests to URLs that match any of the `include` RegExps and none of the
+   * `exclude` RegExps are considered navigation requests and handled
+   * accordingly.
    */
   private navigationUrls: {include: RegExp[], exclude: RegExp[]};
 
   /**
-   * The normalized URL to the file that serves as the index page to satisfy navigation requests.
-   * Usually this is `/index.html`.
+   * The normalized URL to the file that serves as the index page to satisfy
+   * navigation requests. Usually this is `/index.html`.
    */
   private indexUrl = this.adapter.normalizeUrl(this.manifest.index);
 
@@ -68,7 +69,7 @@ export class AppVersion implements UpdateSource {
 
   constructor(
       private scope: ServiceWorkerGlobalScope, private adapter: Adapter, private database: Database,
-      idle: IdleScheduler, private debugHandler: DebugHandler, readonly manifest: Manifest,
+      idle: IdleScheduler, private debugHandler: DebugLogger, readonly manifest: Manifest,
       readonly manifestHash: string) {
     // The hashTable within the manifest is an Object - convert it to a Map for easier lookups.
     Object.keys(manifest.hashTable).forEach(url => {
@@ -111,9 +112,8 @@ export class AppVersion implements UpdateSource {
   }
 
   /**
-   * Fully initialize this version of the application. If this Promise resolves successfully, all
-   * required
-   * data has been safely downloaded.
+   * Fully initialize this version of the application. If this Promise resolves
+   * successfully, all required data has been safely downloaded.
    */
   async initializeFully(updateFrom?: UpdateSource): Promise<void> {
     try {
@@ -203,7 +203,8 @@ export class AppVersion implements UpdateSource {
 
   /**
    * Determine whether the request is a navigation request.
-   * Takes into account: Request mode, `Accept` header, `navigationUrls` patterns.
+   * Takes into account: Request mode, `Accept` header, `navigationUrls`
+   * patterns.
    */
   isNavigationRequest(req: Request): boolean {
     if (req.mode !== 'navigate') {

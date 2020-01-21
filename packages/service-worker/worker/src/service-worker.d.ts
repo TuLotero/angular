@@ -11,9 +11,22 @@
 export declare global {
   interface ServiceWorkerGlobalScope {
     /**
-     * Disallow accessing `CacheStorage APIs directly to ensure that all accesses go through a
+     * Disallow accessing `CacheStorage APIs directly to ensure that all
+     * accesses go through a
      * `NamedCacheStorage` instance (exposed by the `Adapter`).
      */
     caches: unknown;
   }
+}
+
+// Push API
+interface PushSubscriptionChangeEvent extends ExtendableEvent {
+  readonly newSubscription?: PushSubscription;
+  readonly oldSubscription?: PushSubscription;
+}
+
+// Sync API
+interface SyncEvent extends ExtendableEvent {
+  lastChance: boolean;
+  tag: string;
 }
