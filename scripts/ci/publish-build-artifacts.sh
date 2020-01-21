@@ -61,13 +61,6 @@ function publishRepo {
   rm -rf $REPO_DIR/*
   cp -R $ARTIFACTS_DIR/* $REPO_DIR/
 
-  if [[ ${CI} ]]; then
-    (
-      # The file ~/.git_credentials is created in /.circleci/config.yml
-      cd $REPO_DIR && \
-      git config credential.helper "store --file=$HOME/.git_credentials"
-    )
-  fi
   echo `date` > $REPO_DIR/BUILD_INFO
   echo $SHA >> $REPO_DIR/BUILD_INFO
   echo 'This file is used by the npm/yarn_install rule to detect APF. See https://github.com/bazelbuild/rules_nodejs/issues/927' > $REPO_DIR/ANGULAR_PACKAGE
