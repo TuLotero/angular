@@ -29,6 +29,9 @@ describe('Generator', () => {
         test: true,
       },
       index: '/index.html',
+      push: {
+        url: 'foo',
+      },
       assetGroups: [{
         name: 'test',
         resources: {
@@ -76,6 +79,9 @@ describe('Generator', () => {
         test: true,
       },
       index: '/test/index.html',
+      push: {
+        url: 'foo',
+      },
       assetGroups: [{
         name: 'test',
         installMode: 'prefetch',
@@ -135,6 +141,9 @@ describe('Generator', () => {
     const gen = new Generator(fs, '/test');
     const config = await gen.process({
       index: '/index.html',
+      push: {
+        url: 'foo',
+      },
     });
 
     expect(config).toEqual({
@@ -142,6 +151,9 @@ describe('Generator', () => {
       timestamp: 1234567890123,
       appData: undefined,
       index: '/test/index.html',
+      push: {
+        url: 'foo',
+      },
       assetGroups: [],
       dataGroups: [],
       navigationUrls: [
@@ -194,6 +206,9 @@ describe('Generator', () => {
     const gen = new Generator(fs, '/');
     const config = await gen.process({
       index: '/index.html',
+      push: {
+        url: 'foo',
+      },
       assetGroups: [{
         name: 'test',
         resources: {
@@ -222,6 +237,9 @@ describe('Generator', () => {
       appData: undefined,
       timestamp: 1234567890123,
       index: '/index.html',
+      push: {
+        url: 'foo',
+      },
       assetGroups: [{
         name: 'test',
         installMode: 'prefetch',

@@ -18,6 +18,7 @@ import {MockFileSystemBuilder, MockServerStateBuilder, tmpHashTableForFs} from '
 import {SwTestHarness, SwTestHarnessBuilder} from '@angular/service-worker/worker/testing/scope';
 import {Observable} from 'rxjs';
 import {take} from 'rxjs/operators';
+import {MockAsyncLocalStorage} from '../../../bazel-out/x64_windows-fastbuild/bin/packages/service-worker/worker/testing/mock';
 
 (function() {
 // Skip environments that don't support the minimum APIs needed to run the SW tests.
@@ -81,13 +82,14 @@ describe('ngsw + companion lib', () => {
   let reg: MockServiceWorkerRegistration;
   let scope: SwTestHarness;
   let driver: Driver;
+  let storageMock: MockAsyncLocalStorage;
 
   beforeEach(async () => {
     // Fire up the client.
     mock = new MockServiceWorkerContainer();
     comm = new NgswCommChannel(mock as any);
     scope = new SwTestHarnessBuilder().withServerState(server).build();
-    driver = new Driver(scope, scope, new CacheDatabase(scope));
+    driver = new Driver(scope, scope, new CacheDatabase(scope), storageMock);
 
     scope.clients.add('default');
     scope.clients.getMock('default')!.queue.subscribe(msg => {

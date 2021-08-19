@@ -14,8 +14,9 @@ import {CacheTable} from './db-cache';
 import {DebugHandler} from './debug';
 import {errorToString} from './error';
 import {IdleScheduler} from './idle';
+import {AsyncLocalStorage} from './local-storage';
 import {hashManifest, Manifest, ManifestHash} from './manifest';
-import {isMsgActivateUpdate, isMsgCheckForUpdates, MsgAny} from './msg';
+import {isMsgActivateUpdate, isMsgCheckForUpdates, isMsgStatusPush, MsgAny} from './msg';
 
 type ClientId = string;
 
@@ -56,23 +57,25 @@ export enum DriverReadyState {
 
 export class Driver implements Debuggable, UpdateSource {
   /**
-   * Tracks the current readiness condition under which the SW is operating. This controls
-   * whether the SW attempts to respond to some or all requests.
+   * Tracks the current readiness condition under which the SW is operating.
+   * This controls whether the SW attempts to respond to some or all requests.
    */
   state: DriverReadyState = DriverReadyState.NORMAL;
   private stateMessage: string = '(nominal)';
 
   /**
-   * Tracks whether the SW is in an initialized state or not. Before initialization,
-   * it's not legal to respond to requests.
+   * Tracks whether the SW is in an initialized state or not. Before
+   * initialization, it's not legal to respond to requests.
    */
   initialized: Promise<void>|null = null;
 
   /**
-   * Maps client IDs to the manifest hash of the application version being used to serve
-   * them. If a client ID is not present here, it has not yet been assigned a version.
+   * Maps client IDs to the manifest hash of the application version being used
+   * to serve them. If a client ID is not present here, it has not yet been
+   * assigned a version.
    *
-   * If a ManifestHash appears here, it is also present in the `versions` map below.
+   * If a ManifestHash appears here, it is also present in the `versions` map
+   * below.
    */
   private clientVersionMap = new Map<ClientId, ManifestHash>();
 
@@ -104,8 +107,8 @@ export class Driver implements Debuggable, UpdateSource {
   private ngswStatePath = this.adapter.parseUrl('ngsw/state', this.scope.registration.scope).path;
 
   /**
-   * A scheduler which manages a queue of tasks that need to be executed when the SW is
-   * not doing any other work (not processing any other requests).
+   * A scheduler which manages a queue of tasks that need to be executed when
+   * the SW is not doing any other work (not processing any other requests).
    */
   idle: IdleScheduler;
 
@@ -115,7 +118,8 @@ export class Driver implements Debuggable, UpdateSource {
   private controlTable = this.db.open('control');
 
   constructor(
-      private scope: ServiceWorkerGlobalScope, private adapter: Adapter, private db: Database) {
+      private scope: ServiceWorkerGlobalScope, private adapter: Adapter, private db: Database,
+      private localStorage: AsyncLocalStorage) {
     // Set up all the event handlers that the SW needs.
 
     // The install event is triggered when the service worker is first installed.
@@ -167,6 +171,14 @@ export class Driver implements Debuggable, UpdateSource {
     this.scope.addEventListener('message', (event) => this.onMessage(event!));
     this.scope.addEventListener('push', (event) => this.onPush(event!));
     this.scope.addEventListener('notificationclick', (event) => this.onClick(event!));
+    this.scope.addEventListener(
+        'pushsubscriptionchange',
+        (event) => event ? event.waitUntil(this.handlePushStatus()) : true);
+    this.scope.addEventListener('sync', (event) => {
+      if (event && event.tag === 'push_sync') {
+        event.waitUntil(this.handlePushStatus());
+      }
+    });
 
     // The debugger generates debug pages in response to debugging requests.
     this.debugger = new DebugHandler(this, this.adapter);
@@ -179,7 +191,8 @@ export class Driver implements Debuggable, UpdateSource {
    * The handler for fetch events.
    *
    * This is the transition point between the synchronous event handler and the
-   * asynchronous execution that eventually resolves for respondWith() and waitUntil().
+   * asynchronous execution that eventually resolves for respondWith() and
+   * waitUntil().
    */
   private onFetch(event: FetchEvent): void {
     const req = event.request;
@@ -317,6 +330,33 @@ export class Driver implements Debuggable, UpdateSource {
     }
   }
 
+  /**
+   * The handler for subscription changes
+   *
+   * This will upload to backend server new subscription when server changes.
+   */
+  private async onPushSubscriptionChange(event: PushSubscriptionChangeEvent) {
+    const current = this.versions.get(this.latestHash!)!;
+    if (current) {
+      const manifest = current.manifest;
+      if (manifest.push) {
+        const req = this.adapter.newRequest(manifest.push.url, {
+          method: 'POST',
+          body: JSON.stringify(
+              {oldSubscription: event.oldSubscription, newSubscription: event.newSubscription})
+        });
+        const response = await this.scope.fetch(req);
+        if (!response.ok) {
+          this.debugger.log(
+              'Tried to upload new push subscription but server' +
+              ' responses with ' + response.status.toString());
+        }
+      }
+    } else {
+      this.debugger.log('Push subscription change: No version exists of app');
+    }
+  }
+
   private async handleMessage(msg: MsgAny&{action: string}, from: Client): Promise<void> {
     if (isMsgCheckForUpdates(msg)) {
       const action = (async () => {
@@ -325,6 +365,64 @@ export class Driver implements Debuggable, UpdateSource {
       await this.reportStatus(from, action, msg.statusNonce);
     } else if (isMsgActivateUpdate(msg)) {
       await this.reportStatus(from, this.updateClient(from), msg.statusNonce);
+    } else if (isMsgStatusPush(msg)) {
+      await this.reportStatus(from, this.handleRequestedPush(msg.subscription), msg.statusNonce);
+    }
+  }
+
+  private async handleRequestedPush(subscription: PushSubscription|null) {
+    try {
+      await this.localStorage.open();
+      if (subscription) {
+        await this.localStorage.setItem('subscription', JSON.stringify(subscription));
+        await this.enablePushSync();
+      } else {
+        await this.localStorage.removeItem('subscription');
+      }
+    } catch (e) {
+      this.debugger.log(e);
+    } finally {
+      this.localStorage.close();
+    }
+  }
+
+  private async handlePushStatus() {
+    try {
+      await this.localStorage.open();
+      const pushManager = this.scope.registration.pushManager;
+      const pushState = await pushManager.permissionState({userVisibleOnly: true});
+      if (pushState === 'granted') {
+        const subscription = await pushManager.getSubscription();
+        if (subscription) {
+          const oldRawSubscription = await this.localStorage.getItem('subscription');
+          await this.localStorage.setItem('subscription', JSON.stringify(subscription));
+          if (oldRawSubscription) {
+            const oldSubscription = JSON.parse(oldRawSubscription) as PushSubscription;
+            if (oldSubscription.endpoint !== subscription.endpoint) {
+              await this.onPushSubscriptionChange(<PushSubscriptionChangeEvent>{
+                oldSubscription: oldSubscription,
+                newSubscription: subscription
+              });
+            }
+          }
+        } else {
+          this.debugger.log('Handle push status enabled but no subscription.');
+        }
+      }
+    } catch (e) {
+      this.debugger.log(e);
+    } finally {
+      this.localStorage.close();
+    }
+  }
+
+  private async enablePushSync() {
+    if (this.scope.registration.sync) {
+      const tags = await this.scope.registration.sync.getTags();
+
+      if (!tags.find(t => t === 'push_sync')) {
+        await this.scope.registration.sync.register('push_sync');
+      }
     }
   }
 
@@ -549,8 +647,8 @@ export class Driver implements Debuggable, UpdateSource {
         await this.checkForUpdate();
       });
     } catch (_) {
-      // Something went wrong. Try to start over by fetching a new manifest from the
-      // server and building up an empty initial state.
+      // Something went wrong. Try to start over by fetching a new manifest
+      // from the server and building up an empty initial state.
       const manifest = await this.fetchLatestManifest();
       const hash = hashManifest(manifest);
       manifests = {[hash]: manifest};
@@ -740,8 +838,9 @@ export class Driver implements Debuggable, UpdateSource {
 
   /**
    * Retrieve a copy of the latest manifest from the server.
-   * Return `null` if `ignoreOfflineError` is true (default: false) and the server or client are
-   * offline (detected as response status 503 (service unavailable) or 504 (gateway timeout)).
+   * Return `null` if `ignoreOfflineError` is true (default: false) and the
+   * server or client are offline (detected as response status 503 (service
+   * unavailable) or 504 (gateway timeout)).
    */
   private async fetchLatestManifest(ignoreOfflineError?: false): Promise<Manifest>;
   private async fetchLatestManifest(ignoreOfflineError: true): Promise<Manifest|null>;
@@ -767,9 +866,10 @@ export class Driver implements Debuggable, UpdateSource {
   }
 
   /**
-   * Schedule the SW's attempt to reach a fully prefetched state for the given AppVersion
-   * when the SW is not busy and has connectivity. This returns a Promise which must be
-   * awaited, as under some conditions the AppVersion might be initialized immediately.
+   * Schedule the SW's attempt to reach a fully prefetched state for the given
+   * AppVersion when the SW is not busy and has connectivity. This returns a
+   * Promise which must be awaited, as under some conditions the AppVersion
+   * might be initialized immediately.
    */
   private async scheduleInitialization(appVersion: AppVersion): Promise<void> {
     const initialize = async () => {
@@ -970,9 +1070,11 @@ export class Driver implements Debuggable, UpdateSource {
   }
 
   /**
-   * Delete caches that were used by older versions of `@angular/service-worker` to avoid running
-   * into storage quota limitations imposed by browsers.
-   * (Since at this point the SW has claimed all clients, it is safe to remove those caches.)
+   * Delete caches that were used by older versions of
+   * `@angular/service-worker` to avoid running into storage quota limitations
+   * imposed by browsers.
+   * (Since at this point the SW has claimed all clients, it is safe to remove
+   * those caches.)
    */
   async cleanupOldSwCaches(): Promise<void> {
     // This is an exceptional case, where we need to interact with caches that would not be
@@ -985,8 +1087,8 @@ export class Driver implements Debuggable, UpdateSource {
   }
 
   /**
-   * Determine if a specific version of the given resource is cached anywhere within the SW,
-   * and fetch it if so.
+   * Determine if a specific version of the given resource is cached anywhere
+   * within the SW, and fetch it if so.
    */
   lookupResourceWithHash(url: NormalizedUrl, hash: string): Promise<Response|null> {
     return Array

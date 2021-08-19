@@ -15,11 +15,16 @@ export interface Manifest {
   timestamp: number;
   appData?: {[key: string]: string};
   index: string;
+  push?: PushConfig;
   assetGroups?: AssetGroupConfig[];
   dataGroups?: DataGroupConfig[];
   navigationUrls: {positive: boolean, regex: string}[];
   navigationRequestStrategy: 'freshness'|'performance';
   hashTable: {[url: string]: string};
+}
+
+export interface PushConfig {
+  url: string;
 }
 
 export interface AssetGroupConfig {

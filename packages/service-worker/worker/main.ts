@@ -9,8 +9,9 @@
 import {Adapter} from './src/adapter';
 import {CacheDatabase} from './src/db-cache';
 import {Driver} from './src/driver';
+import {IndexedDbLocalStorage} from './src/local-storage';
 
 const scope = self as unknown as ServiceWorkerGlobalScope;
 
 const adapter = new Adapter(scope.registration.scope, self.caches);
-new Driver(scope, adapter, new CacheDatabase(adapter));
+new Driver(scope, adapter, new CacheDatabase(adapter), new IndexedDbLocalStorage());

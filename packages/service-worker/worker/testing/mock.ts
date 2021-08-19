@@ -6,6 +6,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {AsyncLocalStorage} from '@angular/service-worker/worker/src/local-storage';
+
 import {Manifest} from '../src/manifest';
 import {sha1} from '../src/sha1';
 
@@ -285,4 +287,29 @@ export function tmpHashTable(manifest: Manifest): Map<string, string> {
  */
 function joinPaths(path1: string, path2: string): string {
   return `${path1.replace(/\/$/, '')}/${path2.replace(/^\//, '')}`;
+}
+
+
+export class MockAsyncLocalStorage implements AsyncLocalStorage {
+  clear(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  close(): void {}
+
+  getItem(key: string): Promise<string|null> {
+    return Promise.resolve(null);
+  }
+
+  open(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  removeItem(key: string): Promise<void> {
+    return Promise.resolve();
+  }
+
+  setItem(key: string, data: string): Promise<void> {
+    return Promise.resolve();
+  }
 }

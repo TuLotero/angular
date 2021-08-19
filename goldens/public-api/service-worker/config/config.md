@@ -35,6 +35,8 @@ export interface Config {
     navigationRequestStrategy?: 'freshness' | 'performance';
     // (undocumented)
     navigationUrls?: string[];
+    // (undocumented)
+    push?: PushConfig;
 }
 
 // @public

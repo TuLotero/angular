@@ -115,6 +115,7 @@ export class SwTestHarness extends Adapter<MockCacheStorage> implements Context,
   autoAdvanceTime = false;
   // TODO(issue/24571): remove '!'.
   unregistered!: boolean;
+  location!: Location;
   readonly notifications: {title: string, options: Object}[] = [];
   readonly registration: ServiceWorkerRegistration = {
     active: {
