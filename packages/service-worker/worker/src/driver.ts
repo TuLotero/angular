@@ -15,7 +15,7 @@ import {DebugHandler} from './debug';
 import {errorToString} from './error';
 import {IdleScheduler} from './idle';
 import {AsyncLocalStorage} from './local-storage';
-import {hashManifest, Manifest, ManifestHash} from './manifest';
+import {hashManifest, Manifest, ManifestHash, NamespaceConfig} from './manifest';
 import {isMsgActivateUpdate, isMsgCheckForUpdates, isMsgStatusPush, MsgAny} from './msg';
 
 type ClientId = string;
@@ -454,7 +454,14 @@ export class Driver implements Debuggable, UpdateSource {
 
     const onActionClick = notification?.data?.onActionClick[notificationAction];
 
-    const urlToOpen = new URL(onActionClick?.url ?? '', this.scope.registration.scope).href;
+    let urlToOpen = new URL(onActionClick?.url ?? '', this.scope.registration.scope).href;
+
+    const namespaceConfig = this.getNamespaceConfig();
+
+    if (this.isNamespaceSupported(namespaceConfig, notification?.data?.url)) {
+      let url = new URL(namespaceConfig!.url, this.scope.registration.scope).href;
+      urlToOpen = `${url}?${namespaceConfig!.param}=${encodeURIComponent(notification.data.url)}`;
+    }
 
     switch (onActionClick?.operation) {
       case 'openWindow':
@@ -487,6 +494,16 @@ export class Driver implements Debuggable, UpdateSource {
       type: 'NOTIFICATION_CLICK',
       data: {action, notification: options},
     });
+  }
+
+  private getNamespaceConfig(): NamespaceConfig|null {
+    const current = this.versions.get(this.latestHash!)!;
+
+    return current?.manifest?.namespaceRedirect ?? null;
+  }
+
+  private isNamespaceSupported(namespaceConfig: NamespaceConfig|null, url: string): boolean {
+    return !!namespaceConfig && !!url && url.startsWith(namespaceConfig.namespace);
   }
 
   private async getLastFocusedMatchingClient(scope: ServiceWorkerGlobalScope):

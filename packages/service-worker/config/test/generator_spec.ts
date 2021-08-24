@@ -32,6 +32,11 @@ describe('Generator', () => {
       push: {
         url: 'foo',
       },
+      namespaceRedirect: {
+        namespace: 'namespace',
+        url: 'rd',
+        param: 'param',
+      },
       assetGroups: [{
         name: 'test',
         resources: {
@@ -81,6 +86,11 @@ describe('Generator', () => {
       index: '/test/index.html',
       push: {
         url: 'foo',
+      },
+      namespaceRedirect: {
+        namespace: 'namespace',
+        url: 'rd',
+        param: 'param',
       },
       assetGroups: [{
         name: 'test',
@@ -154,6 +164,7 @@ describe('Generator', () => {
       push: {
         url: 'foo',
       },
+      namespaceRedirect: null,
       assetGroups: [],
       dataGroups: [],
       navigationUrls: [
@@ -209,6 +220,11 @@ describe('Generator', () => {
       push: {
         url: 'foo',
       },
+      namespaceRedirect: {
+        namespace: 'namespace',
+        url: 'rd',
+        param: 'param',
+      },
       assetGroups: [{
         name: 'test',
         resources: {
@@ -239,6 +255,11 @@ describe('Generator', () => {
       index: '/index.html',
       push: {
         url: 'foo',
+      },
+      namespaceRedirect: {
+        namespace: 'namespace',
+        url: 'rd',
+        param: 'param',
       },
       assetGroups: [{
         name: 'test',
