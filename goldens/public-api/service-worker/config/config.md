@@ -30,11 +30,15 @@ export interface Config {
     // (undocumented)
     dataGroups?: DataGroup[];
     // (undocumented)
+    debug?: DebugConfig;
+    // (undocumented)
     index: string;
     // (undocumented)
     navigationRequestStrategy?: 'freshness' | 'performance';
     // (undocumented)
     navigationUrls?: string[];
+    // (undocumented)
+    push?: PushConfig;
 }
 
 // @public
@@ -78,13 +82,11 @@ class Generator_2 {
     readonly fs: Filesystem;
     // (undocumented)
     process(config: Config): Promise<Object>;
-    }
-
+}
 export { Generator_2 as Generator }
 
 // @public (undocumented)
 export type Glob = string;
-
 
 // (No @packageDocumentation comment for this package)
 

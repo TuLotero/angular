@@ -402,7 +402,7 @@ export class Driver implements Debuggable, UpdateSource {
           const oldRawSubscription = await this.localStorage.getItem('subscription');
           await this.localStorage.setItem('subscription', JSON.stringify(subscription));
           if (oldRawSubscription) {
-            const oldSubscription = <PushSubscription>JSON.parse(oldRawSubscription);
+            const oldSubscription = JSON.parse(oldRawSubscription) as PushSubscription;
             if (oldSubscription.endpoint !== subscription.endpoint) {
               await this.onPushSubscriptionChange(<PushSubscriptionChangeEvent>{
                 oldSubscription: oldSubscription,

@@ -232,6 +232,8 @@ describe('Generator', () => {
       appData: undefined,
       timestamp: 1234567890123,
       index: '/index.html',
+      push: undefined,
+      debug: undefined,
       assetGroups: [{
         name: 'test',
         installMode: 'prefetch',
