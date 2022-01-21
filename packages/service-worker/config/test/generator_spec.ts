@@ -180,6 +180,8 @@ describe('Generator', () => {
          timestamp: 1234567890123,
          appData: undefined,
          index: '/index.html',
+         push: undefined,
+         debug: undefined,
          assetGroups: [
            {
              name: 'group-foo',
