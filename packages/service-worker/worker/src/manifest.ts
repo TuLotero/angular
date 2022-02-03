@@ -17,11 +17,18 @@ export interface Manifest {
   index: string;
   push?: PushConfig;
   debug?: DebugConfig;
+  namespaceRedirect?: NamespaceConfig;
   assetGroups?: AssetGroupConfig[];
   dataGroups?: DataGroupConfig[];
   navigationUrls: {positive: boolean, regex: string}[];
   navigationRequestStrategy: 'freshness'|'performance';
   hashTable: {[url: string]: string};
+}
+
+export interface NamespaceConfig {
+  namespace: string;
+  url: string;
+  param: string;
 }
 
 export interface PushConfig {

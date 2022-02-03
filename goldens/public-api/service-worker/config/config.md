@@ -34,6 +34,8 @@ export interface Config {
     // (undocumented)
     index: string;
     // (undocumented)
+    namespaceRedirect?: NamespaceConfig;
+    // (undocumented)
     navigationRequestStrategy?: 'freshness' | 'performance';
     // (undocumented)
     navigationUrls?: string[];

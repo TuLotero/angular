@@ -26,10 +26,22 @@ export interface Config {
   index: string;
   push?: PushConfig;
   debug?: DebugConfig;
+  namespaceRedirect?: NamespaceConfig;
   assetGroups?: AssetGroup[];
   dataGroups?: DataGroup[];
   navigationUrls?: string[];
   navigationRequestStrategy?: 'freshness'|'performance';
+}
+
+/**
+ * Configuration for protocol redirects
+ *
+ * @experimental
+ */
+export interface NamespaceConfig {
+  namespace: string;
+  url: string;
+  param: string;
 }
 
 /**

@@ -36,6 +36,7 @@ export class Generator {
       appData: config.appData,
       push: config.push,
       debug: config.debug,
+      namespaceRedirect: config.namespaceRedirect ?? null,
       index: joinUrls(this.baseHref, config.index),
       assetGroups,
       dataGroups: this.processDataGroups(config),

@@ -33,6 +33,11 @@ describe('Generator', () => {
         url: 'foo',
       },
       debug: {endpoint: 'foo'},
+      namespaceRedirect: {
+        namespace: 'namespace',
+        url: 'rd',
+        param: 'param',
+      },
       assetGroups: [{
         name: 'test',
         resources: {
@@ -82,6 +87,11 @@ describe('Generator', () => {
       index: '/test/index.html',
       push: {
         url: 'foo',
+      },
+      namespaceRedirect: {
+        namespace: 'namespace',
+        url: 'rd',
+        param: 'param',
       },
       debug: {endpoint: 'foo'},
       assetGroups: [{
@@ -249,6 +259,7 @@ describe('Generator', () => {
       appData: undefined,
       push: undefined,
       debug: undefined,
+      namespaceRedirect: null,
       index: '/test/index.html',
       assetGroups: [],
       dataGroups: [],
@@ -302,6 +313,11 @@ describe('Generator', () => {
     const gen = new Generator(fs, '/');
     const config = await gen.process({
       index: '/index.html',
+      namespaceRedirect: {
+        namespace: 'namespace',
+        url: 'rd',
+        param: 'param',
+      },
       assetGroups: [{
         name: 'test',
         resources: {
@@ -332,6 +348,11 @@ describe('Generator', () => {
       index: '/index.html',
       push: undefined,
       debug: undefined,
+      namespaceRedirect: {
+        namespace: 'namespace',
+        url: 'rd',
+        param: 'param',
+      },
       assetGroups: [{
         name: 'test',
         installMode: 'prefetch',
